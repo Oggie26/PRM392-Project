@@ -2,7 +2,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.prm391_project.screen.auth.RegisterScreen
+//import com.example.prm391_project.screen.auth.RegisterScreen
 import com.example.prm391_project.screens.LoginScreen
 
 // Define your navigation routes
@@ -21,9 +21,9 @@ fun AppNavController(navController: NavHostController) {
         composable(Screen.Login.route) {
             LoginScreen(navController)
         }
-        composable(Screen.Register.route) {
-            RegisterScreen(navController)
-        }
+//        composable(Screen.Register.route) {
+//            RegisterScreen(navController)
+//        }
         composable(Screen.Home.route)  {
             HomeScreen(navController)
         }
