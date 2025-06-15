@@ -38,3 +38,8 @@ fun HomeScreen(navController : NavController) {
         }
     }
 }
+
+@Composable
+fun SmallTopAppBar(title: @Composable () -> Unit) {
+
+}
