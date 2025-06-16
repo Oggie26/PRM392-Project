@@ -8,8 +8,10 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,9 +19,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -45,6 +48,8 @@ fun RegisterScreen(navController: NavController) {
     var error by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
+    val keyboardController = LocalSoftwareKeyboardController.current
     var isVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -57,7 +62,7 @@ fun RegisterScreen(navController: NavController) {
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFF8BBD0).copy(alpha = 0.2f), // Pastel pink
+                        Color(0xFFF8BBD0).copy(alpha = 0.2f),
                         MaterialTheme.colorScheme.surfaceVariant
                     )
                 )
@@ -73,175 +78,41 @@ fun RegisterScreen(navController: NavController) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.Center,
+                    .verticalScroll(scrollState) // ✅ Cuộn được
+                    .imePadding() // ✅ Tránh bàn phím
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Logo placeholder
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Happy Clothes 👕",
+                    fontSize = 32.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(8.dp, RoundedCornerShape(16.dp)),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     )
                 ) {
                     Column(
-                        modifier = Modifier
-                            .padding(24.dp),
+                        modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = "Happy Clothes",
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 30.sp
-                            ),
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        OutlinedTextField(
-                            value = fullName,
-                            onValueChange = { fullName = it },
-                            label = { Text("Họ và tên") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "Full name icon",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = username,
-                            onValueChange = { username = it },
-                            label = { Text("Tên đăng nhập") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.AccountCircle,
-                                    contentDescription = "Username icon",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            label = { Text("Mật khẩu") },
-                            visualTransformation = PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Password icon",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = confirmPassword,
-                            onValueChange = { confirmPassword = it },
-                            label = { Text("Xác nhận mật khẩu") },
-                            visualTransformation = PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Confirm password icon",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it },
-                            label = { Text("Email") },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Email icon",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = { phone = it },
-                            label = { Text("Số điện thoại") },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Phone,
-                                    contentDescription = "Phone icon",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                            )
-                        )
+                        // Các field
+                        InputField("Họ và tên", fullName, Icons.Default.Person) { fullName = it }
+                        InputField("Tên đăng nhập", username, Icons.Default.AccountCircle) { username = it }
+                        PasswordField("Mật khẩu", password) { password = it }
+                        PasswordField("Xác nhận mật khẩu", confirmPassword) { confirmPassword = it }
+                        InputField("Email", email, Icons.Default.Email, KeyboardType.Email) { email = it }
+                        InputField("Số điện thoại", phone, Icons.Default.Phone, KeyboardType.Phone) { phone = it }
 
                         AnimatedVisibility(visible = error.isNotEmpty()) {
                             Text(
@@ -256,27 +127,28 @@ fun RegisterScreen(navController: NavController) {
 
                         Button(
                             onClick = {
+                                keyboardController?.hide()
                                 loading = true
                                 error = ""
-                                coroutineScope.launch {
-                                    try {
-                                        // Validate confirm password
-                                        if (password != confirmPassword) {
-                                            error = "Mật khẩu và xác nhận mật khẩu không khớp."
-                                            loading = false
-                                            return@launch
-                                        }
 
-                                        val response: IResponse<RegisterResponse> = RetrofitClient.authService.register(
-                                            RegisterRequest(
-                                                username = username,
-                                                password = password,
-                                                phone = phone,
-                                                email = email,
-                                                fullName = fullName
+                                coroutineScope.launch {
+                                    if (password != confirmPassword) {
+                                        error = "Mật khẩu và xác nhận mật khẩu không khớp."
+                                        loading = false
+                                        return@launch
+                                    }
+
+                                    try {
+                                        val response: IResponse<RegisterResponse> =
+                                            RetrofitClient.authService.register(
+                                                RegisterRequest(
+                                                    username = username,
+                                                    password = password,
+                                                    phone = phone,
+                                                    email = email,
+                                                    fullName = fullName
+                                                )
                                             )
-                                        )
-                                        Log.d("Register", "Response status: ${response.code}, message: ${response.message}")
                                         if (response.code == 200) {
                                             navController.navigate("login") {
                                                 popUpTo(navController.graph.startDestinationId) { inclusive = true }
@@ -291,7 +163,6 @@ fun RegisterScreen(navController: NavController) {
                                             else -> "Lỗi server: ${e.message()}"
                                         }
                                     } catch (e: IOException) {
-                                        Log.e("Register", "IOException: ${e.message}")
                                         error = "Không thể kết nối đến server. Vui lòng kiểm tra mạng."
                                     } catch (e: Exception) {
                                         error = "Đã xảy ra lỗi: ${e.message ?: "Không xác định"}"
@@ -302,15 +173,14 @@ fun RegisterScreen(navController: NavController) {
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
-                                .shadow(4.dp, RoundedCornerShape(12.dp)),
-                            enabled = !loading && username.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank() &&
-                                    phone.isNotBlank() && email.isNotBlank() && fullName.isNotBlank(),
+                                .height(50.dp),
+                            enabled = listOf(fullName, username, password, confirmPassword, email, phone).all { it.isNotBlank() } && !loading,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                            )
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(0.dp) // ❌ Không shadow
                         ) {
                             if (loading) {
                                 CircularProgressIndicator(
@@ -318,10 +188,7 @@ fun RegisterScreen(navController: NavController) {
                                     modifier = Modifier.size(24.dp)
                                 )
                             } else {
-                                Text(
-                                    "Đăng ký",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
+                                Text("Đăng ký", style = MaterialTheme.typography.titleMedium)
                             }
                         }
 
@@ -342,4 +209,59 @@ fun RegisterScreen(navController: NavController) {
             }
         }
     }
+}
+
+@Composable
+fun InputField(
+    label: String,
+    value: String,
+    icon: ImageVector,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    onValueChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        leadingIcon = {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        },
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        )
+    )
+}
+
+@Composable
+fun PasswordField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        leadingIcon = {
+            Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        },
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        )
+    )
 }
