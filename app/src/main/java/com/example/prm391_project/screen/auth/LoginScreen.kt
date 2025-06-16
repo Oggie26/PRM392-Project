@@ -208,8 +208,7 @@ fun LoginScreen(navController: NavController) {
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
-                                .shadow(4.dp, RoundedCornerShape(12.dp)),
+                                .height(50.dp),
                             enabled = !loading && username.isNotBlank() && password.isNotBlank(),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -225,7 +224,6 @@ fun LoginScreen(navController: NavController) {
                             } else {
                                 Text(
                                     "Đăng nhập",
-                                    style = MaterialTheme.typography.titleMedium
                                 )
                             }
                         }

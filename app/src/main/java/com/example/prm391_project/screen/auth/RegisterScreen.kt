@@ -78,19 +78,6 @@ fun RegisterScreen(navController: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Logo placeholder
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "\uD83C\uDFE1",
-                        fontSize = 48.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
