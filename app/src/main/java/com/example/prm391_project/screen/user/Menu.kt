@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.ChatBubble
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -73,6 +75,12 @@ fun CustomBottomNavigation(
             selectedIcon = Icons.Filled.ChatBubble,
             unselectedIcon = Icons.Outlined.ChatBubbleOutline,
             label = "Chat"
+        ),
+        BottomNavItem(
+            route = "setting",
+            selectedIcon = Icons.Filled.Settings,
+            unselectedIcon = Icons.Outlined.Settings,
+            label = "Setting"
         )
     )
 
@@ -184,6 +192,15 @@ fun MainScreenWithBottomNav(navController: NavController) {
                 }
                 composable("chat") {
                     LoginScreen(navController = bottomNavController)
+                }
+                composable("setting") {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("Setting Screen", style = MaterialTheme.typography.headlineMedium)
+                    }
                 }
             }
         }
