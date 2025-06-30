@@ -1,5 +1,6 @@
 package com.example.prm391_project.screens
 
+import TokenManager
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -21,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.prm391_project.request.LoginRequest
 import com.example.prm391_project.response.IResponse
+import com.example.prm391_project.response.LoginData
 import com.example.prm391_project.response.LoginResponse
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -41,9 +44,10 @@ fun LoginScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
-    var googleLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     var isVisible by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val tokenManager = TokenManager(context)
 
     LaunchedEffect(Unit) {
         isVisible = true
@@ -185,6 +189,7 @@ fun LoginScreen(navController: NavController) {
                                         )
                                         Log.d("Login", "Response status: ${response.code}, message: ${response.message}")
                                         if (response.code == 200) {
+                                            response.data?.data?.let { tokenManager.saveToken(it.token) }
                                             navController.navigate("home") {
                                                 popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                             }

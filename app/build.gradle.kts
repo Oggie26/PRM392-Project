@@ -68,6 +68,9 @@ dependencies {
     implementation (libs.androidx.navigation.compose)
     implementation (libs.androidx.activity.compose.v193)
 
+//    implementation (libs.androidx.security.crypto.v110alpha06)
+    implementation (libs.androidx.security.crypto.ktx.v110alpha06)
+
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.kotlinx.coroutines.android)
@@ -77,6 +80,7 @@ dependencies {
     implementation(libs.androidx.espresso.core)
     implementation(libs.androidx.espresso.core)
     implementation(libs.androidx.animation.core.lint)
+    implementation(libs.androidx.security.crypto.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

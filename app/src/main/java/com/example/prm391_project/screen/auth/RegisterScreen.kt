@@ -149,10 +149,9 @@ fun RegisterScreen(navController: NavController) {
                                                     fullName = fullName
                                                 )
                                             )
-                                        if (response.code == 200) {
-                                            navController.navigate("login") {
-                                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                            }
+                                        if (response.code == 201) {
+                                            loading = false
+                                            navController.navigate("login")
                                         } else {
                                             error = response.message
                                         }
