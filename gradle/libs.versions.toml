@@ -1,6 +1,8 @@
 [versions]
 agp = "8.7.3"
 androidxActivityCompose = "1.9.3"
+androidxSecurityCrypto = "1.1.0-alpha06"
+androidxSecurityCryptoKtx = "1.1.0-alpha06"
 converterGson = "2.9.0"
 kotlin = "2.0.0"
 coreKtx = "1.16.0"
@@ -20,12 +22,17 @@ navigationComposeJvmstubs = "2.9.0"
 navigationComposeAndroid = "2.9.0"
 firebaseAppdistributionGradle = "5.1.1"
 animationCoreLint = "1.8.2"
+securityCrypto = "1.1.0-beta01"
+securityCryptoKtx = "1.0.0"
 
 [libraries]
 androidx-activity-compose-v193 = { module = "androidx.activity:activity-compose", version.ref = "androidxActivityCompose" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+androidx-security-crypto-ktx-v110alpha06 = { module = "androidx.security:security-crypto-ktx", version.ref = "androidxSecurityCryptoKtx" }
+androidx-security-crypto-v110alpha06 = { module = "androidx.security:security-crypto", version.ref = "androidxSecurityCrypto" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -49,6 +56,7 @@ material3 = { module = "androidx.compose.material3:material3", version.ref = "ma
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "converterGson" }
 firebase-appdistribution-gradle = { group = "com.google.firebase", name = "firebase-appdistribution-gradle", version.ref = "firebaseAppdistributionGradle" }
 androidx-animation-core-lint = { group = "androidx.compose.animation", name = "animation-core-lint", version.ref = "animationCoreLint" }
+androidx-security-crypto-ktx = { group = "androidx.security", name = "security-crypto-ktx", version.ref = "securityCryptoKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

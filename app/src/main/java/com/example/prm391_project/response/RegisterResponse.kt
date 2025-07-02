@@ -10,9 +10,7 @@ data class RegisterResponse(
 
 data class RegisterData(
     val userId: Int,
-    val birthday: LocalDate,
     val phone: String,
     val email: String,
-    val gender: String,
     val fullName: String
 )

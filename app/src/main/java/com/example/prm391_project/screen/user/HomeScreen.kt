@@ -7,7 +7,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController : NavController) {
     Scaffold(
@@ -41,5 +40,4 @@ fun HomeScreen(navController : NavController) {
 
 @Composable
 fun SmallTopAppBar(title: @Composable () -> Unit) {
-
 }
