@@ -37,6 +37,10 @@ import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
 
+// Cần import Screen sealed class để truy cập các route đã định nghĩa
+import com.example.prm391_project.Screen
+import com.example.prm391_project.config.RetrofitClient
+
 @Composable
 fun RegisterScreen(navController: NavController) {
     var username by remember { mutableStateOf("") }
@@ -151,7 +155,15 @@ fun RegisterScreen(navController: NavController) {
                                             )
                                         if (response.code == 201) {
                                             loading = false
-                                            navController.navigate("login")
+                                            // Điều hướng về màn hình đăng nhập sau khi đăng ký thành công
+                                            // Sử dụng Screen.Login.route
+                                            navController.navigate(Screen.Login.route) {
+                                                // Optional: popUpTo để xóa màn hình đăng ký khỏi back stack
+                                                // Nếu bạn muốn người dùng không quay lại màn hình đăng ký
+                                                popUpTo(navController.graph.id) {
+                                                    inclusive = true
+                                                }
+                                            }
                                         } else {
                                             error = response.message
                                         }
@@ -196,7 +208,7 @@ fun RegisterScreen(navController: NavController) {
                         Text(
                             text = "Đã có tài khoản? Đăng nhập ngay",
                             modifier = Modifier
-                                .clickable { navController.navigate("login") }
+                                .clickable { navController.navigate(Screen.Login.route) } // <--- SỬA TẠI ĐÂY
                                 .padding(8.dp),
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodyMedium.copy(

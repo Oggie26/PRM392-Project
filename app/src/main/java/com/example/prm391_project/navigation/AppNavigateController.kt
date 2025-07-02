@@ -1,4 +1,3 @@
-// AppNavController.kt
 package com.example.prm391_project
 
 import androidx.compose.runtime.Composable
@@ -11,8 +10,7 @@ import androidx.navigation.navigation // Import navigation function for nested g
 import com.example.prm391_project.screen.user.MainScreenWithBottomNav
 import com.example.prm391_project.screen.user.ProductCartScreen // Nếu bạn cần ProductCartScreen trực tiếp ở cấp cao nhất
 import com.example.prm391_project.screens.LoginScreen
-//import com.example.prm391_project.screens.Regis // Đảm bảo bạn có file RegisterScreen này
-import com.example.prm391_project.screens.LoginScreen
+import com.example.prm391_project.screen.auth.RegisterScreen
 
 // Define your navigation routes
 sealed class Screen(val route: String) {
@@ -40,25 +38,20 @@ fun AppNavController(navController: NavHostController, isLoggedIn: Boolean) {
         startDestination =  Screen.MainAppGraph.route
     ) {
         composable(Screen.Login.route) {
-
             LoginScreen(navController)
         }
-//        composable(Screen.Register.route) {
-//
-//            RegisterScreen(navController)
-//        }
-
+        composable(Screen.Register.route) {
+            RegisterScreen(navController)
+        }
 
         navigation(
             startDestination = Screen.Home.route,
             route = Screen.MainAppGraph.route
         ) {
-
             composable(Screen.Home.route) {
-
-                MainScreenWithBottomNav(navController)
+                // Pass the *outer* navController here
+                MainScreenWithBottomNav(outerNavController = navController)
             }
-
         }
     }
 }

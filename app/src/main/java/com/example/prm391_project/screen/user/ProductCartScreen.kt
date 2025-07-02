@@ -1,5 +1,7 @@
 package com.example.prm391_project.screen.user
 
+import TokenManager // Import TokenManager
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,26 +35,105 @@ import androidx.navigation.NavController
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
-import com.example.prm391_project.common.CartItem
-import com.example.prm391_project.common.MockData
+// import com.example.prm391_project.common.CartItem // <-- Có thể không cần nữa nếu dùng CartItemDto trực tiếp
+// import com.example.prm391_project.common.MockData // <-- LOẠI BỎ IMPORT NÀY
 import coil.compose.AsyncImage
-import com.example.prm391_project.screen.user.components.CustomTopBar
+import com.example.prm391_project.config.RetrofitClient
+// import com.example.prm391_project.screen.user.components.CustomTopBar // Bỏ comment nếu bạn muốn dùng
 import java.text.NumberFormat
 import java.util.*
+
+// IMPORTS MỚI CHO API
+import com.example.prm391_project.response.CartResult
+import com.example.prm391_project.response.CartItemDto // Import CartItemDto
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
+
+// Nếu bạn vẫn muốn giữ CartItem cho UI (tốt hơn là dùng CartItemDto trực tiếp hoặc chuyển đổi)
+// thì bạn có thể tạo một extension function để chuyển đổi từ CartItemDto sang CartItem.
+// Ví dụ:
+data class CartItem( // Giữ lại nếu bạn vẫn muốn cấu trúc này cho UI
+    val id: String,
+    val name: String,
+    val price: Double,
+    val imageUrl: String,
+    val quantity: Int
+)
+
+fun CartItemDto.toCartItem(): CartItem? {
+    return if (id != null && name != null && price != null && imageUrl != null && quantity != null) {
+        CartItem(id, name, price, imageUrl, quantity)
+    } else {
+        null // Trả về null nếu có bất kỳ trường nào bị thiếu
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductCartScreen(navController: NavController) {
-    var cartItems by remember { mutableStateOf(MockData.cartItems) }
-    var hasDiscountCode by remember { mutableStateOf(false) }
-
-    val subtotal = cartItems.sumOf { it.price * it.quantity }
-    val total = subtotal
+    // Thay đổi từ MockData sang dữ liệu từ API
+    var cartItems by remember { mutableStateOf<MutableList<CartItem>>(mutableListOf()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var subtotal by remember { mutableStateOf(0.0) }
+    var total by remember { mutableStateOf(0.0) } // total có thể bằng subtotal nếu chưa có discount
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context.applicationContext) }
 
     val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
+
+    // Logic gọi API để lấy giỏ hàng
+    LaunchedEffect(Unit) {
+        val token = tokenManager.getToken()
+        if (token.isNullOrEmpty()) {
+            error = "Bạn chưa đăng nhập. Vui lòng đăng nhập để xem giỏ hàng."
+            isLoading = false
+            // Có thể điều hướng về LoginScreen
+            // navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } }
+            return@LaunchedEffect
+        }
+
+        coroutineScope.launch {
+            try {
+                val authHeader = "Bearer $token"
+                // THAY ĐỔI DÒNG NÀY:
+                val response = RetrofitClient.cartService.getCart(authHeader) // <-- SỬ DỤNG cartService
+
+                Log.d("ProductCartScreen", "Cart API Response Code: ${response.code}")
+                Log.d("ProductCartScreen", "Cart API Response Message: ${response.message}")
+
+                if (response.code == 200) {
+                    val cartResult = response.data
+                    cartResult?.let { result ->
+                        cartItems = result.items?.mapNotNull { it.toCartItem() }?.toMutableList() ?: mutableListOf()
+                        subtotal = result.totalPrice ?: 0.0
+                        total = subtotal
+                    }
+                } else {
+                    error = response.message ?: "Không thể tải giỏ hàng."
+                }
+            } catch (e: HttpException) {
+                error = "Lỗi HTTP: ${e.code()} - ${e.message()}"
+                Log.e("ProductCartScreen", "HTTP Exception: ${e.message()}", e)
+            } catch (e: IOException) {
+                error = "Lỗi mạng: Không thể kết nối đến server."
+                Log.e("ProductCartScreen", "IO Exception: ${e.message}", e)
+            } catch (e: Exception) {
+                error = "Lỗi không xác định: ${e.message}"
+                Log.e("ProductCartScreen", "General Exception: ${e.message}", e)
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
 
     Column(
         modifier = Modifier
@@ -60,10 +141,11 @@ fun ProductCartScreen(navController: NavController) {
             .background(Color(0xFFF5F5F5)) // Thêm background cho toàn bộ màn hình
     ) {
         // Top Bar
-//        CustomTopBar(
-//            title = "Cart",
-//            onBackClick = { navController.popBackStack() }
-//        )
+        // Bỏ comment nếu bạn muốn dùng CustomTopBar
+        // CustomTopBar(
+        //     title = "Cart",
+        //     onBackClick = { navController.popBackStack() }
+        // )
 
         // Content với padding và spacing tốt hơn
         Card(
@@ -98,33 +180,56 @@ fun ProductCartScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Cart Items - chiếm phần lớn không gian
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(cartItems, key = { it.id }) { item ->
-                        SwipeableCartItem(
-                            item = item,
-                            onQuantityChange = { newQuantity ->
-                                cartItems = cartItems.map {
-                                    if (it.id == item.id) it.copy(quantity = newQuantity)
-                                    else it
-                                }.toMutableList()
-                            },
-                            onDelete = {
-                                cartItems = cartItems.filter { it.id != item.id }.toMutableList()
-                            }
-                        )
+                // Hiển thị trạng thái tải/lỗi/dữ liệu
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                        Text("Đang tải giỏ hàng...", modifier = Modifier.padding(top = 60.dp))
                     }
+                } else if (error != null) {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        Text("Lỗi: $error", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+                    }
+                } else if (cartItems.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        Text("Giỏ hàng của bạn đang trống!", textAlign = TextAlign.Center)
+                    }
+                } else {
+                    // Cart Items - chiếm phần lớn không gian
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(cartItems, key = { it.id }) { item ->
+                            SwipeableCartItem(
+                                item = item,
+                                onQuantityChange = { newQuantity ->
+                                    cartItems = cartItems.map {
+                                        if (it.id == item.id) it.copy(quantity = newQuantity)
+                                        else it
+                                    }.toMutableList()
+                                    // Cập nhật lại tổng tiền sau khi thay đổi số lượng
+                                    subtotal = cartItems.sumOf { it.price * it.quantity }
+                                    total = subtotal
+                                },
+                                onDelete = {
+                                    cartItems = cartItems.filter { it.id != item.id }.toMutableList()
+                                    // Cập nhật lại tổng tiền sau khi xóa item
+                                    subtotal = cartItems.sumOf { it.price * it.quantity }
+                                    total = subtotal
+                                }
+                            )
+                        }
 
-                    // Thêm spacer cuối để có thêm không gian cuộn
-                    item {
-                        Spacer(modifier = Modifier.height(100.dp))
+                        // Thêm spacer cuối để có thêm không gian cuộn
+                        item {
+                            Spacer(modifier = Modifier.height(100.dp))
+                        }
                     }
                 }
+
 
                 // Bottom Section - cố định ở cuối
                 Column(

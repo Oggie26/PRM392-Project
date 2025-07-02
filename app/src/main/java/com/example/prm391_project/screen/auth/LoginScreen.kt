@@ -32,11 +32,14 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.prm391_project.request.LoginRequest
 import com.example.prm391_project.response.IResponse
-import com.example.prm391_project.response.LoginData
 import com.example.prm391_project.response.LoginResponse
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+
+// Import thêm Screen sealed class để sử dụng các route đã định nghĩa
+import com.example.prm391_project.Screen // Đảm bảo import này đúng đường dẫn
+import com.example.prm391_project.config.RetrofitClient
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -47,7 +50,7 @@ fun LoginScreen(navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
     var isVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val tokenManager = TokenManager(context)
+    val tokenManager = remember { TokenManager(context.applicationContext) }
 
     LaunchedEffect(Unit) {
         isVisible = true
@@ -189,8 +192,15 @@ fun LoginScreen(navController: NavController) {
                                         )
                                         Log.d("Login", "Response status: ${response.code}, message: ${response.message}")
                                         if (response.code == 200) {
-                                            response.data?.data?.let { tokenManager.saveToken(it.token) }
-                                            navController.navigate("home") {
+                                            // response.data lúc này sẽ chứa đối tượng LoginResponse (đã được ánh xạ từ "result" JSON)
+                                            response.data?.let { loginResponseObject ->
+                                                // Truy cập trực tiếp token từ loginResponseObject
+                                                Log.d("token", loginResponseObject.token)
+                                                tokenManager.saveToken(loginResponseObject.token)
+                                            }
+                                            val savedToken = tokenManager.getToken()
+                                            Log.d("TokenDebug", "Saved and retrieved token: $savedToken")
+                                            navController.navigate(com.example.prm391_project.Screen.MainAppGraph.route) {
                                                 popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                             }
                                         } else {
@@ -235,12 +245,11 @@ fun LoginScreen(navController: NavController) {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
+                        // Điều chỉnh dòng này để sử dụng Screen.Register.route
                         Text(
                             text = "Chưa có tài khoản? Đăng ký ngay",
                             modifier = Modifier
-                                .clickable { navController.navigate("register") }
+                                .clickable { navController.navigate(com.example.prm391_project.Screen.Register.route) } // <--- SỬA TẠI ĐÂY
                                 .padding(8.dp),
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodyMedium.copy(

@@ -71,6 +71,8 @@ dependencies {
 
 //    implementation (libs.androidx.security.crypto.v110alpha06)
     implementation (libs.androidx.security.crypto.ktx.v110alpha06)
+    implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+
 
     implementation(libs.retrofit)
     implementation(libs.converter.gson)

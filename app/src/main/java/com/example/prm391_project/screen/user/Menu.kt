@@ -5,22 +5,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material.icons.outlined.ChatBubble
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
@@ -36,7 +30,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.prm391_project.screens.LoginScreen
+import com.example.prm391_project.screens.LoginScreen // Assuming this import is correct
+import com.example.prm391_project.screens.user.SettingsScreen
 
 data class BottomNavItem(
     val route: String,
@@ -88,7 +83,6 @@ fun CustomBottomNavigation(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 16.dp),
-
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -153,7 +147,7 @@ fun BottomNavItemView(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithBottomNav(navController: NavController) {
+fun MainScreenWithBottomNav(outerNavController: NavController) { // Renamed parameter
     val bottomNavController = rememberNavController()
     val currentBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val startRouteForBottomNav = "home"
@@ -191,16 +185,17 @@ fun MainScreenWithBottomNav(navController: NavController) {
                     }
                 }
                 composable("chat") {
-                    LoginScreen(navController = bottomNavController)
-                }
-                composable("setting") {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text("Setting Screen", style = MaterialTheme.typography.headlineMedium)
+                        Text("Chat Screen", style = MaterialTheme.typography.headlineMedium)
                     }
+                }
+                composable("setting") {
+                    // Pass the outerNavController to SettingsScreen
+                    SettingsScreen(navController = outerNavController)
                 }
             }
         }
