@@ -52,6 +52,7 @@ android {
 }
 
 dependencies {
+    implementation("io.coil-kt:coil-compose:2.4.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -70,6 +71,8 @@ dependencies {
 
 //    implementation (libs.androidx.security.crypto.v110alpha06)
     implementation (libs.androidx.security.crypto.ktx.v110alpha06)
+    implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+
 
     implementation(libs.retrofit)
     implementation(libs.converter.gson)

@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "852260171302",
+    "firebase_url": "https://prm392-ba50a-default-rtdb.firebaseio.com",
+    "project_id": "prm392-ba50a",
+    "storage_bucket": "prm392-ba50a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:852260171302:android:108a5c93bfe7cef6d900e7",
+        "android_client_info": {
+          "package_name": "com.example.prm391_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUpVGRRBx9rCgv4dO3XRHhwcudv0ezvA8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,6 +1,5 @@
 package com.example.prm391_project
 
-import AppNavController
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,7 +19,7 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavController(navController)
+                    AppNavController(navController, isLoggedIn = true)
                 }
             }
         }
