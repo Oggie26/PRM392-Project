@@ -29,6 +29,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -72,6 +73,10 @@ dependencies {
 //    implementation (libs.androidx.security.crypto.v110alpha06)
     implementation (libs.androidx.security.crypto.ktx.v110alpha06)
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("com.airbnb.android:lottie-compose:6.4.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // <--- THÊM DÒNG NÀY
+
 
 
     implementation(libs.retrofit)

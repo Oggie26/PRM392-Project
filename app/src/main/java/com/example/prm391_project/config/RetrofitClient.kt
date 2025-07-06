@@ -1,4 +1,3 @@
-// com.example.prm391_project.config/RetrofitClient.kt
 package com.example.prm391_project.config
 
 import com.example.prm391_project.api.AuthService
@@ -13,7 +12,7 @@ object RetrofitClient {
     private const val BASE_API_URL = "https://icot.onrender.com/api/"
 
     // Base URL riêng cho các API không có tiền tố "/api/" (như carts)
-    const val BASE_CARTS_URL = "https://icot.onrender.com/carts" // <-- THÊM CÁI NÀY
+    const val BASE_CARTS_URL = "https://icot.onrender.com/carts" // <-- Đảm bảo đây là `const val`
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -36,12 +35,11 @@ object RetrofitClient {
             .create(AuthService::class.java)
     }
 
-    // Instance cho CartService (sử dụng base URL khác hoặc xử lý riêng)
-    // Vì CartService.getCart sử dụng @Url, base URL ở đây không quá quan trọng,
-    // nhưng chúng ta vẫn cần một Retrofit instance để tạo service.
+    // Instance cho CartService
     val cartService: CartService by lazy {
-        Retrofit.Builder() // <-- Tạo một Builder mới cho CartService
-            .baseUrl("https://icot.onrender.com/") // Base URL tổng quát hơn cho các API không có /api/
+        // Sử dụng base URL tổng quát hơn vì CartService.getCart dùng @Url
+        Retrofit.Builder()
+            .baseUrl("https://icot.onrender.com/") // Base URL tổng quát để khởi tạo Retrofit cho CartService
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
