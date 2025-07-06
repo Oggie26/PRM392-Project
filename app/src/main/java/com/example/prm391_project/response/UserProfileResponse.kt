@@ -9,6 +9,7 @@ data class UserProfileResponse(
     val fullName: String?, // Có thể là null
     val email: String?, // Có thể là null
     val username: String?, // Có thể là null
+    val password: String?, // <-- ĐÃ THÊM TRƯỜNG NÀY
     val birthday: String?, // Có thể là null (hoặc LocalDate/Date nếu parse)
     val phone: String?, // Có thể là null
     val point: Int?, // Có thể là null

@@ -32,18 +32,29 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.prm391_project.screens.LoginScreen // Assuming this import is correct
 import com.example.prm391_project.screens.user.SettingsScreen
+import com.example.prm391_project.common.CartStateHolder // <-- IMPORT CartStateHolder
+import com.example.prm391_project.config.RetrofitClient // Để gọi API
+import TokenManager // Để lấy token
+import android.util.Log
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
+import androidx.navigation.NavGraph.Companion.findStartDestination // <-- THÊM IMPORT NÀY
 
 data class BottomNavItem(
     val route: String,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
-    val label: String
+    val label: String,
+    val hasBadge: Boolean = false // Thêm thuộc tính này để xác định có badge hay không
 )
 
 @Composable
 fun CustomBottomNavigation(
     navController: NavController,
     currentRoute: String,
+    cartItemCount: Int, // <-- THÊM THAM SỐ NÀY
     modifier: Modifier = Modifier
 ) {
     val items = listOf(
@@ -57,7 +68,8 @@ fun CustomBottomNavigation(
             route = "cart",
             selectedIcon = Icons.Filled.ShoppingCart,
             unselectedIcon = Icons.Outlined.ShoppingCart,
-            label = "Cart"
+            label = "Cart",
+            hasBadge = true // Đặt cờ cho mục Cart
         ),
         BottomNavItem(
             route = "map",
@@ -111,14 +123,17 @@ fun CustomBottomNavigation(
                         onClick = {
                             if (currentRoute != item.route) {
                                 navController.navigate(item.route) {
-                                    popUpTo(navController.graph.startDestinationId) {
+                                    // Sửa lỗi Unresolved reference: findStartDestination
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        inclusive = true
                                         saveState = true
                                     }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
                             }
-                        }
+                        },
+                        badgeCount = if (item.hasBadge) cartItemCount else 0 // Truyền số lượng badge
                     )
                 }
             }
@@ -126,22 +141,37 @@ fun CustomBottomNavigation(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class) // Cần @OptIn cho BadgedBox
 @Composable
 fun BottomNavItemView(
     item: BottomNavItem,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    badgeCount: Int = 0 // <-- THÊM THAM SỐ NÀY
 ) {
     IconButton(
         onClick = onClick,
         modifier = Modifier.size(48.dp)
     ) {
-        Icon(
-            imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-            contentDescription = item.label,
-            tint = if (isSelected) Color.White else Color.Gray,
-            modifier = Modifier.size(24.dp)
-        )
+        BadgedBox( // <-- SỬ DỤNG BadgedBox
+            badge = {
+                if (badgeCount > 0) {
+                    Badge(
+                        containerColor = Color.Red,
+                        contentColor = Color.White
+                    ) {
+                        Text(badgeCount.toString())
+                    }
+                }
+            }
+        ) {
+            Icon(
+                imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                contentDescription = item.label,
+                tint = if (isSelected) Color.White else Color.Gray,
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
 
@@ -151,11 +181,58 @@ fun MainScreenWithBottomNav(outerNavController: NavController) { // Renamed para
     val bottomNavController = rememberNavController()
     val currentBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val startRouteForBottomNav = "home"
+
+    // Thu thập số lượng giỏ hàng từ CartStateHolder
+    val cartItemCount by CartStateHolder.cartItemCount.collectAsState() // <-- THU THẬP SỐ LƯỢNG GIỎ HÀNG
+
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context.applicationContext) }
+
+    // Fetch số lượng giỏ hàng khi màn hình chính được tạo
+    // Điều này đảm bảo badge hiển thị ngay khi mở app
+    LaunchedEffect(Unit) {
+        val token = tokenManager.getToken()
+        if (!token.isNullOrEmpty()) {
+            coroutineScope.launch {
+                try {
+                    val authHeader = "Bearer $token"
+                    val response = RetrofitClient.cartService.getCart(authHeader)
+                    if (response.code == 200) {
+                        val cartResult = response.data
+                        cartResult?.let { result ->
+                            // Tính tổng số lượng từ tất cả các item trong giỏ hàng
+                            val itemCount = result.items?.size ?: 0
+                            CartStateHolder.updateCartItemCount(itemCount)
+                            Log.d("MainScreen", "Initial cart item count fetched: $itemCount")
+                        }
+                    } else {
+                        Log.e("MainScreen", "Failed to fetch initial cart count: ${response.message}")
+                        CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu API trả lỗi
+                    }
+                } catch (e: HttpException) {
+                    Log.e("MainScreen", "HTTP Exception fetching initial cart: ${e.code()} - ${e.message()}")
+                    CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu lỗi HTTP
+                } catch (e: IOException) {
+                    Log.e("MainScreen", "IO Exception fetching initial cart: ${e.message}")
+                    CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu lỗi mạng
+                } catch (e: Exception) {
+                    Log.e("MainScreen", "General Exception fetching initial cart: ${e.message}")
+                    CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu lỗi không xác định
+                }
+            }
+        } else {
+            CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu không có token (chưa đăng nhập)
+            Log.d("MainScreen", "No token found, initial cart count set to 0.")
+        }
+    }
+
     Scaffold(
         bottomBar = {
             CustomBottomNavigation(
                 navController = bottomNavController,
-                currentRoute = currentBackStackEntry?.destination?.route ?: startRouteForBottomNav
+                currentRoute = currentBackStackEntry?.destination?.route ?: startRouteForBottomNav,
+                cartItemCount = cartItemCount // <-- TRUYỀN SỐ LƯỢNG GIỎ HÀNG
             )
         },
         containerColor = Color(0xFFF5F5F5)

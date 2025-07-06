@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.* // Cần import tất cả cho remember, LaunchedEffect, mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,18 +20,25 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-// import androidx.navigation.NavGraph.Companion.findStartDestination // <-- LOẠI BỎ IMPORT NÀY
-import com.example.prm391_project.R // Make sure this import is correct
-import com.example.prm391_project.Screen // Import your Screen sealed class
+import coil.compose.AsyncImage
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.prm391_project.R
+import com.example.prm391_project.Screen
 import com.example.prm391_project.config.RetrofitClient
-import com.example.prm391_project.response.UserProfileResponse // <-- IMPORT UserProfileResponse
+import com.example.prm391_project.response.UserProfileResponse
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,10 +46,10 @@ fun SettingsScreen(
     navController: NavController,
 ) {
     val context = LocalContext.current
-    val tokenManager = remember { TokenManager(context.applicationContext) } // Sử dụng applicationContext
+    val tokenManager = remember { TokenManager(context.applicationContext) }
     val coroutineScope = rememberCoroutineScope()
 
-    var userProfileState by remember { mutableStateOf<UserProfileResponse?>(null) } // Đổi tên để tránh nhầm lẫn với data class UserProfile
+    var userProfileState by remember { mutableStateOf<UserProfileResponse?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -51,9 +58,8 @@ fun SettingsScreen(
         if (token.isNullOrEmpty()) {
             error = "Không tìm thấy token. Vui lòng đăng nhập lại."
             isLoading = false
-            // Điều hướng về LoginScreen nếu không có token
             navController.navigate(Screen.Login.route) {
-                popUpTo(0) { inclusive = true } // Xóa toàn bộ back stack
+                popUpTo(0) { inclusive = true }
             }
             return@LaunchedEffect
         }
@@ -61,13 +67,14 @@ fun SettingsScreen(
         coroutineScope.launch {
             try {
                 val authHeader = "Bearer $token"
-                val response = RetrofitClient.authService.getUserProfile(authHeader)
+                val response = RetrofitClient.authService.getUserProfile(authHeader) // <-- Đã sửa: Truyền BASE_USERS_PROFILE_URL
 
                 Log.d("SettingScreen", "User Profile Response Code: ${response.code}")
                 Log.d("SettingScreen", "User Profile Response Message: ${response.message}")
+                Log.d("SettingScreen", "User Profile Response Data: ${response.data}")
+
 
                 if (response.code == 200) {
-                    // response.data (là UserProfileResponse) giờ đã ánh xạ từ "result" JSON
                     userProfileState = response.data
                     Log.d("SettingScreen", "User Full Name: ${userProfileState?.fullName}")
                 } else {
@@ -88,182 +95,204 @@ fun SettingsScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Settings",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        color = Color.Black
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFF5F5F5)
-                )
-            )
-        },
-        containerColor = Color(0xFFF5F5F5)
-    ) { paddingValues ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F5))
+    ) {
+        Card(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // User Profile Card
-            Card(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    .fillMaxSize()
+                    .padding(24.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(40.dp))
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text("Đang tải...", fontSize = 16.sp, color = Color.Gray)
-                    } else if (error != null) {
-                        Text("Lỗi: $error", color = MaterialTheme.colorScheme.error, fontSize = 16.sp)
-                    } else if (userProfileState != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // User Avatar
-                            // Sử dụng Coil hoặc Glide để tải ảnh từ userProfileState?.avatar
-                            // Hiện tại dùng placeholder local
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_launcher_foreground), // Hoặc dùng Coil: rememberImagePainter(userProfileState?.avatarUrl)
-                                contentDescription = "User Avatar",
-                                modifier = Modifier
-                                    .size(60.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.LightGray),
-                                contentScale = ContentScale.Crop
+                // Title matching Cart style
+                Text(
+                    text = "My",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.Black,
+                    lineHeight = 28.sp
+                )
+                Text(
+                    text = "Profile",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color.Black,
+                    lineHeight = 28.sp
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // User Profile Section
+                when {
+                    isLoading -> {
+                        Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                            // Tải Lottie composition từ file raw
+                            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.voianimation)) // <--- Đổi loading_animation thành tên file .json của bạn
+
+                            // Điều khiển animation
+                            val progress by animateLottieCompositionAsState(
+                                composition = composition,
+                                iterations = com.airbnb.lottie.compose.LottieConstants.IterateForever // Lặp vô hạn
                             )
 
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
+                            // Hiển thị Lottie Animation
+                            LottieAnimation(
+                                composition = composition,
+                                progress = { progress },
+                                modifier = Modifier.size(200.dp) // Điều chỉnh kích thước animation theo ý muốn
+                            )
+                            // Bạn có thể giữ hoặc xóa CircularProgressIndicator nếu muốn
+                            // CircularProgressIndicator() // Có thể xóa nếu animation đã đủ thông báo đang tải
+                            // Text("Đang tải giỏ hàng...", modifier = Modifier.padding(top = 60.dp)) // Có thể xóa hoặc đặt bên dưới animation
+                        }
+
+                    }
+                    error != null -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Lỗi: $error",
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                    userProfileState != null -> {
+                        // User Profile Card
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F8F8)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                // Avatar
+                                Box(
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.LightGray),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AsyncImage(
+                                        model = userProfileState?.avatar,
+                                        contentDescription = "User Avatar",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop,
+                                        // Sử dụng một placeholder nếu avatar rỗng hoặc lỗi
+                                        error = painterResource(id = R.drawable.avatar_svgrepo_com) // Thay bằng default_avatar_placeholder nếu bạn có
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Full Name
                                 Text(
                                     text = userProfileState?.fullName ?: "Không rõ tên",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.Black
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black,
+                                    textAlign = TextAlign.Center
                                 )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Email
                                 Text(
                                     text = userProfileState?.email ?: "Không rõ email",
                                     fontSize = 14.sp,
-                                    color = Color.Gray
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center
                                 )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Thêm các thông tin chi tiết khác
+                                InfoRow(label = "Username", value = userProfileState?.username ?: "N/A", icon = Icons.Default.AlternateEmail)
+                                InfoRow(label = "Phone", value = userProfileState?.phone ?: "N/A", icon = Icons.Default.Phone)
+                                InfoRow(label = "Birthday", value = userProfileState?.birthday ?: "N/A", icon = Icons.Default.Cake)
+                                InfoRow(label = "Gender", value = userProfileState?.gender ?: "N/A", icon = Icons.Default.Face)
+                                InfoRow(label = "Address", value = userProfileState?.address ?: "N/A", icon = Icons.Default.LocationOn)
                             }
                         }
-                        IconButton(onClick = { /* Handle edit profile click */ }) {
-                            Icon(Icons.Default.ChevronRight, contentDescription = "Edit Profile", tint = Color.Gray)
-                        }
-                    } else {
-                        // Trường hợp không có dữ liệu và không có lỗi
-                        Text("Không có thông tin profile", fontSize = 16.sp, color = Color.Gray)
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-            // Các mục cài đặt khác nếu có, có thể sử dụng SettingsSection và SettingsItem
-            // Ví dụ:
-            // SettingsSection(title = "General Settings") {
-            //     SettingsItem(icon = Icons.Default.Notifications, text = "Notifications", onClick = { /* ... */ })
-            //     SettingsItem(icon = Icons.Default.Language, text = "Language", onClick = { /* ... */ })
-            // }
-
-            // Spacer to push the logout button to the bottom
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Logout Button
-            Button(
-                onClick = {
-                    // 1. Clear the token from SharedPreferences
-                    tokenManager.clearToken()
-                    // 2. Navigate back to the LoginScreen
-                    navController.navigate(Screen.Login.route) {
-                        // Sửa lỗi Unresolved reference: findStartDestination
-                        // Pop up to the LoginScreen and make it inclusive (xóa màn hình Login khỏi back stack)
-                        popUpTo(Screen.Login.route) { // <-- Dùng route của LoginScreen
-                            inclusive = true
-                        }
-                        // Hoặc xóa toàn bộ back stack để chắc chắn không còn màn hình nào trước Login
-                        // popUpTo(0) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.8f))
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                // Settings Options
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ExitToApp,
-                        contentDescription = "Logout",
-                        tint = Color.White
+                    SettingsItem(
+                        icon = Icons.Default.Person,
+                        text = "Edit Profile",
+                        onClick = { navController.navigate(Screen.UpdateProfile.route) } // Điều hướng đến UpdateProfileScreen
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Logout",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Logout Button
+                Button(
+                    onClick = {
+                        tokenManager.clearToken()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF4444)
                     )
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Logout",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White
+                        )
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
-    }
-}
-
-// Các Composable phụ trợ bạn đã cung cấp, không cần sửa đổi nếu chúng hoạt động độc lập
-@Composable
-fun SettingsSection(
-    title: String,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .padding(vertical = 8.dp)
-    ) {
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        HorizontalDivider(
-            color = Color.LightGray.copy(alpha = 0.5f),
-            thickness = 0.5.dp,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        content()
     }
 }
 
@@ -278,21 +307,30 @@ fun SettingsItem(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .background(Color.White, RoundedCornerShape(12.dp))
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color.Gray,
-                modifier = Modifier.size(24.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFFF8F8F8), RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.Black,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = text,
                 fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
                 color = Color.Black
             )
         }
@@ -301,6 +339,41 @@ fun SettingsItem(
             contentDescription = "Go to",
             tint = Color.Gray,
             modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String, icon: ImageVector? = null) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Color.Gray,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(
+            text = "$label:",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Normal,
+            color = Color.DarkGray,
+            modifier = Modifier.width(80.dp)
+        )
+        Text(
+            text = value,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.Black,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f)
         )
     }
 }
