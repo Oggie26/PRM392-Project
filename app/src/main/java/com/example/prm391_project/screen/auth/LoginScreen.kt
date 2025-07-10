@@ -38,7 +38,7 @@ import retrofit2.HttpException
 import java.io.IOException
 
 // Import thêm Screen sealed class để sử dụng các route đã định nghĩa
-import com.example.prm391_project.Screen // Đảm bảo import này đúng đường dẫn
+import com.example.prm391_project.Screen
 import com.example.prm391_project.config.RetrofitClient
 
 @Composable
@@ -91,8 +91,7 @@ fun LoginScreen(navController: NavController) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "\n" +
-                                "\uD83C\uDFE1",
+                        text = "🏡",
                         fontSize = 48.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -192,16 +191,18 @@ fun LoginScreen(navController: NavController) {
                                         )
                                         Log.d("Login", "Response status: ${response.code}, message: ${response.message}")
                                         if (response.code == 200) {
-                                            // response.data lúc này sẽ chứa đối tượng LoginResponse (đã được ánh xạ từ "result" JSON)
                                             response.data?.let { loginResponseObject ->
-                                                // Truy cập trực tiếp token từ loginResponseObject
                                                 Log.d("token", loginResponseObject.token)
                                                 tokenManager.saveToken(loginResponseObject.token)
                                             }
                                             val savedToken = tokenManager.getToken()
                                             Log.d("TokenDebug", "Saved and retrieved token: $savedToken")
-                                            navController.navigate(com.example.prm391_project.Screen.MainAppGraph.route) {
-                                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+
+                                            // Chỉnh sửa navigation để phù hợp với navigation mới
+                                            navController.navigate(Screen.MainAppGraph.route) {
+                                                // Clear toàn bộ back stack để không quay lại login
+                                                popUpTo(0) { inclusive = true }
+                                                launchSingleTop = true
                                             }
                                         } else {
                                             error = response.message
@@ -245,11 +246,10 @@ fun LoginScreen(navController: NavController) {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Điều chỉnh dòng này để sử dụng Screen.Register.route
                         Text(
                             text = "Chưa có tài khoản? Đăng ký ngay",
                             modifier = Modifier
-                                .clickable { navController.navigate(com.example.prm391_project.Screen.Register.route) } // <--- SỬA TẠI ĐÂY
+                                .clickable { navController.navigate(Screen.Register.route) }
                                 .padding(8.dp),
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodyMedium.copy(

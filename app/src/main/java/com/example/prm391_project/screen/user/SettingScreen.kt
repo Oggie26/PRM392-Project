@@ -31,6 +31,7 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.prm391_project.MainActivity
 import com.example.prm391_project.R
 import com.example.prm391_project.Screen
 import com.example.prm391_project.config.RetrofitClient
@@ -38,7 +39,6 @@ import com.example.prm391_project.response.UserProfileResponse
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,13 +53,22 @@ fun SettingsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(Unit) {
-        val token = tokenManager.getToken()
+    // Lấy token một lần và sử dụng trong LaunchedEffect
+    val token by remember { mutableStateOf(tokenManager.getToken()) }
+
+    LaunchedEffect(token) {
         if (token.isNullOrEmpty()) {
             error = "Không tìm thấy token. Vui lòng đăng nhập lại."
             isLoading = false
-            navController.navigate(Screen.Login.route) {
-                popUpTo(0) { inclusive = true }
+            // Chỉ điều hướng nếu không ở trong MainAppGraph
+            if (navController.currentDestination?.route != Screen.MainAppGraph.route) {
+                Log.d("SettingsScreen", "No token, navigating to Login")
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            } else {
+                Log.d("SettingsScreen", "No token, but already in MainAppGraph, staying in Settings")
             }
             return@LaunchedEffect
         }
@@ -67,28 +76,48 @@ fun SettingsScreen(
         coroutineScope.launch {
             try {
                 val authHeader = "Bearer $token"
-                val response = RetrofitClient.authService.getUserProfile(authHeader) // <-- Đã sửa: Truyền BASE_USERS_PROFILE_URL
+                val response = RetrofitClient.authService.getUserProfile(authHeader)
 
-                Log.d("SettingScreen", "User Profile Response Code: ${response.code}")
-                Log.d("SettingScreen", "User Profile Response Message: ${response.message}")
-                Log.d("SettingScreen", "User Profile Response Data: ${response.data}")
-
+                Log.d("SettingsScreen", "User Profile Response Code: ${response.code}")
+                Log.d("SettingsScreen", "User Profile Response Message: ${response.message}")
+                Log.d("SettingsScreen", "User Profile Response Data: ${response.data}")
 
                 if (response.code == 200) {
                     userProfileState = response.data
-                    Log.d("SettingScreen", "User Full Name: ${userProfileState?.fullName}")
+                    Log.d("SettingsScreen", "User Full Name: ${userProfileState?.fullName}")
                 } else {
                     error = response.message ?: "Không thể lấy thông tin profile."
+                    // Nếu token không hợp lệ (401), xóa token và điều hướng về Login
+                    if (response.code == 401) {
+                        tokenManager.clearToken()
+                        if (navController.currentDestination?.route != Screen.Login.route) {
+                            Log.d("SettingsScreen", "Invalid token, navigating to Login")
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
                 }
             } catch (e: HttpException) {
                 error = "Lỗi HTTP: ${e.code()} - ${e.message()}"
-                Log.e("SettingScreen", "HTTP Exception: ${e.message()}", e)
+                Log.e("SettingsScreen", "HTTP Exception: ${e.message()}", e)
+                if (e.code() == 401) {
+                    tokenManager.clearToken()
+                    if (navController.currentDestination?.route != Screen.Login.route) {
+                        Log.d("SettingsScreen", "HTTP 401, navigating to Login")
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
             } catch (e: IOException) {
                 error = "Lỗi mạng: Không thể kết nối đến server."
-                Log.e("SettingScreen", "IO Exception: ${e.message}", e)
+                Log.e("SettingsScreen", "IO Exception: ${e.message}", e)
             } catch (e: Exception) {
                 error = "Lỗi không xác định: ${e.message}"
-                Log.e("SettingScreen", "General Exception: ${e.message}", e)
+                Log.e("SettingsScreen", "General Exception: ${e.message}", e)
             } finally {
                 isLoading = false
             }
@@ -113,16 +142,15 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .padding(24.dp)
             ) {
-                // Title matching Cart style
                 Text(
-                    text = "My",
+                    text = "Thông tin",
                     fontSize = 26.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.Black,
                     lineHeight = 28.sp
                 )
                 Text(
-                    text = "Profile",
+                    text = "Cá nhân",
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Medium,
                     fontFamily = FontFamily.Monospace,
@@ -132,30 +160,20 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // User Profile Section
                 when {
                     isLoading -> {
                         Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                            // Tải Lottie composition từ file raw
-                            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.voianimation)) // <--- Đổi loading_animation thành tên file .json của bạn
-
-                            // Điều khiển animation
+                            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.voianimation))
                             val progress by animateLottieCompositionAsState(
                                 composition = composition,
-                                iterations = com.airbnb.lottie.compose.LottieConstants.IterateForever // Lặp vô hạn
+                                iterations = com.airbnb.lottie.compose.LottieConstants.IterateForever
                             )
-
-                            // Hiển thị Lottie Animation
                             LottieAnimation(
                                 composition = composition,
                                 progress = { progress },
-                                modifier = Modifier.size(200.dp) // Điều chỉnh kích thước animation theo ý muốn
+                                modifier = Modifier.size(200.dp)
                             )
-                            // Bạn có thể giữ hoặc xóa CircularProgressIndicator nếu muốn
-                            // CircularProgressIndicator() // Có thể xóa nếu animation đã đủ thông báo đang tải
-                            // Text("Đang tải giỏ hàng...", modifier = Modifier.padding(top = 60.dp)) // Có thể xóa hoặc đặt bên dưới animation
                         }
-
                     }
                     error != null -> {
                         Box(
@@ -172,7 +190,6 @@ fun SettingsScreen(
                         }
                     }
                     userProfileState != null -> {
-                        // User Profile Card
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -187,7 +204,6 @@ fun SettingsScreen(
                                     .padding(20.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                // Avatar
                                 Box(
                                     modifier = Modifier
                                         .size(100.dp)
@@ -200,14 +216,12 @@ fun SettingsScreen(
                                         contentDescription = "User Avatar",
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop,
-                                        // Sử dụng một placeholder nếu avatar rỗng hoặc lỗi
-                                        error = painterResource(id = R.drawable.avatar_svgrepo_com) // Thay bằng default_avatar_placeholder nếu bạn có
+                                        error = painterResource(id = R.drawable.avatar_svgrepo_com)
                                     )
                                 }
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Full Name
                                 Text(
                                     text = userProfileState?.fullName ?: "Không rõ tên",
                                     fontSize = 20.sp,
@@ -218,7 +232,6 @@ fun SettingsScreen(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                // Email
                                 Text(
                                     text = userProfileState?.email ?: "Không rõ email",
                                     fontSize = 14.sp,
@@ -228,12 +241,10 @@ fun SettingsScreen(
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Thêm các thông tin chi tiết khác
-                                InfoRow(label = "Username", value = userProfileState?.username ?: "N/A", icon = Icons.Default.AlternateEmail)
-                                InfoRow(label = "Phone", value = userProfileState?.phone ?: "N/A", icon = Icons.Default.Phone)
-                                InfoRow(label = "Birthday", value = userProfileState?.birthday ?: "N/A", icon = Icons.Default.Cake)
-                                InfoRow(label = "Gender", value = userProfileState?.gender ?: "N/A", icon = Icons.Default.Face)
-                                InfoRow(label = "Address", value = userProfileState?.address ?: "N/A", icon = Icons.Default.LocationOn)
+                                InfoRow(label = "Điện thoại", value = userProfileState?.phone ?: "N/A", icon = Icons.Default.Phone)
+                                InfoRow(label = "Ngày sinh", value = userProfileState?.birthday ?: "N/A", icon = Icons.Default.Cake)
+                                InfoRow(label = "Giới tính", value = userProfileState?.gender ?: "N/A", icon = Icons.Default.Face)
+                                InfoRow(label = "Địa chỉ", value = userProfileState?.address ?: "N/A", icon = Icons.Default.LocationOn)
                             }
                         }
                     }
@@ -241,25 +252,23 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Settings Options
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     SettingsItem(
                         icon = Icons.Default.Person,
-                        text = "Edit Profile",
-                        onClick = { navController.navigate(Screen.UpdateProfile.route) } // Điều hướng đến UpdateProfileScreen
+                        text = "Chỉnh sửa hồ sơ",
+                        onClick = { navController.navigate(Screen.UpdateProfile.route) }
                     )
-
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Logout Button
                 Button(
                     onClick = {
                         tokenManager.clearToken()
+                        MainActivity.restartApp(context)
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                             launchSingleTop = true
@@ -279,12 +288,12 @@ fun SettingsScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Logout",
+                            contentDescription = "Đăng xuất",
                             tint = Color.White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Logout",
+                            text = "Đăng xuất",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color.White

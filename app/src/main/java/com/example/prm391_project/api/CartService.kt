@@ -2,6 +2,7 @@ package com.example.prm391_project.api
 
 import com.example.prm391_project.response.CartResult
 import com.example.prm391_project.response.IResponse
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PATCH
@@ -16,5 +17,12 @@ interface CartService {
         @Header("Authorization") token: String,
         @Query("productId") productId: String, // <-- Thêm productId
         @Query("quantity") quantity: Int      // <-- Thêm quantity
+    ): IResponse<CartResult>
+
+
+    @DELETE("carts/remove")
+    suspend fun removeItemsFromCart(
+        @Header("Authorization") token: String,
+        @Query("productIds") productIds: List<String> // <-- Danh sách productId cần xóa
     ): IResponse<CartResult>
 }
