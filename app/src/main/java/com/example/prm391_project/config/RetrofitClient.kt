@@ -2,6 +2,7 @@ package com.example.prm391_project.config
 
 import com.example.prm391_project.api.AuthService
 import com.example.prm391_project.api.CartService
+import com.example.prm391_project.api.ProductService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -44,6 +45,16 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(CartService::class.java)
+    }
+
+    //Instance cho ProductService
+    val productService: ProductService by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://icot.onrender.com/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ProductService::class.java)
     }
 
     // Bạn có thể thêm các service khác ở đây
