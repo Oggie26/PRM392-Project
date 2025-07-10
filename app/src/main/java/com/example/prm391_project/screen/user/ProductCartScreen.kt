@@ -162,6 +162,34 @@ fun ProductCartScreen(navController: NavController) {
             }
         }
     }
+// Hàm xóa sản phẩm khỏi giỏ hàng
+    val deleteCartItem: (String) -> Unit = { productId ->
+        coroutineScope.launch {
+            val token = tokenManager.getToken()
+            if (token.isNullOrEmpty()) {
+                Toast.makeText(context, "Vui lòng đăng nhập để xóa sản phẩm.", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            try {
+                val authHeader = "Bearer $token"
+                val response = RetrofitClient.cartService.removeItemsFromCart(authHeader, listOf(productId))
+
+                if (response.code == 200) {
+                    Toast.makeText(context, "Đã xóa sản phẩm khỏi giỏ hàng.", Toast.LENGTH_SHORT).show()
+                    cartItems = cartItems.filterNot { it.id == productId }.toMutableList()
+                    subtotal = cartItems.sumOf { it.price * it.quantity }
+                    total = subtotal
+                    CartStateHolder.updateCartItemCount(cartItems.size)
+                } else {
+                    Toast.makeText(context, "Lỗi xóa: ${response.message}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Lỗi khi xóa sản phẩm: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("ProductCartScreen", "Error deleting item: ${e.message}", e)
+            }
+        }
+    }
 
     // Hàm cập nhật số lượng cục bộ và thêm vào pendingUpdates
     val updateQuantityLocally: (String, Int) -> Unit =
@@ -243,14 +271,14 @@ fun ProductCartScreen(navController: NavController) {
                     .padding(24.dp)
             ) {
                 Text(
-                    text = "My",
+                    text = "Giỏ hàng",
                     fontSize = 26.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.Black,
                     lineHeight = 28.sp
                 )
                 Text(
-                    text = "Cart List",
+                    text = "Của Tôi",
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Medium,
                     fontFamily = FontFamily.Monospace,
@@ -295,9 +323,10 @@ fun ProductCartScreen(navController: NavController) {
                                     updateQuantityLocally(item.id, newQuantity)
                                 },
                                 onDelete = {
-                                    Toast.makeText(context, "Chức năng xóa chưa được triển khai.", Toast.LENGTH_SHORT).show()
+                                    deleteCartItem(item.id) // <-- Gọi API xóa
                                 }
                             )
+
                         }
                         item {
                             Spacer(modifier = Modifier.height(100.dp))
@@ -313,25 +342,6 @@ fun ProductCartScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Subtotal",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.Black
-                            )
-                            Text(
-                                text = formatter.format(subtotal),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.Black
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
 
                         Canvas(
                             modifier = Modifier
@@ -354,7 +364,7 @@ fun ProductCartScreen(navController: NavController) {
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Total",
+                                text = "Tổng",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Black
@@ -370,51 +380,59 @@ fun ProductCartScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    Button(
-                        onClick = {
-                            syncCartWithServer() // Đồng bộ ngay khi nhấn Checkout
-                            // TODO: Xử lý logic Checkout
-                        },
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Black
-                        )
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = "Checkout",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White
-                        )
+
+                        OutlinedButton(
+                            onClick = {
+                                syncCartWithServer()
+                                navController.navigate("home")
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White,
+                                contentColor = Color.Black
+                            ),
+                            border = BorderStroke(1.dp, Color.Black)
+                        ) {
+                            Text(
+                                text = "Mua tiếp",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.Black
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                syncCartWithServer()
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Black
+                            )
+                        ) {
+                            Text(
+                                text = "Thanh toán",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
+                            )
+                        }
+
+
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            syncCartWithServer() // Đồng bộ khi tiếp tục mua sắm
-                            navController.navigate("home")
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
-                        ),
-                        border = BorderStroke(1.dp, Color.Black)
-                    ) {
-                        Text(
-                            text = "Continue Shopping",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Black
-                        )
-                    }
                 }
             }
         }

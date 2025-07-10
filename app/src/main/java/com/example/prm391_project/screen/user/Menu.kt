@@ -30,31 +30,31 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.prm391_project.screens.LoginScreen // Assuming this import is correct
+import com.example.prm391_project.screens.LoginScreen
 import com.example.prm391_project.screens.user.SettingsScreen
-import com.example.prm391_project.common.CartStateHolder // <-- IMPORT CartStateHolder
-import com.example.prm391_project.config.RetrofitClient // Để gọi API
-import TokenManager // Để lấy token
+import com.example.prm391_project.common.CartStateHolder
+import com.example.prm391_project.config.RetrofitClient
+import TokenManager
 import android.util.Log
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
-import androidx.navigation.NavGraph.Companion.findStartDestination // <-- THÊM IMPORT NÀY
+import androidx.navigation.NavGraph.Companion.findStartDestination
 
 data class BottomNavItem(
     val route: String,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
     val label: String,
-    val hasBadge: Boolean = false // Thêm thuộc tính này để xác định có badge hay không
+    val hasBadge: Boolean = false
 )
 
 @Composable
 fun CustomBottomNavigation(
     navController: NavController,
     currentRoute: String,
-    cartItemCount: Int, // <-- THÊM THAM SỐ NÀY
+    cartItemCount: Int,
     modifier: Modifier = Modifier
 ) {
     val items = listOf(
@@ -69,7 +69,7 @@ fun CustomBottomNavigation(
             selectedIcon = Icons.Filled.ShoppingCart,
             unselectedIcon = Icons.Outlined.ShoppingCart,
             label = "Cart",
-            hasBadge = true // Đặt cờ cho mục Cart
+            hasBadge = true
         ),
         BottomNavItem(
             route = "map",
@@ -123,7 +123,6 @@ fun CustomBottomNavigation(
                         onClick = {
                             if (currentRoute != item.route) {
                                 navController.navigate(item.route) {
-                                    // Sửa lỗi Unresolved reference: findStartDestination
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         inclusive = true
                                         saveState = true
@@ -133,7 +132,7 @@ fun CustomBottomNavigation(
                                 }
                             }
                         },
-                        badgeCount = if (item.hasBadge) cartItemCount else 0 // Truyền số lượng badge
+                        badgeCount = if (item.hasBadge) cartItemCount else 0
                     )
                 }
             }
@@ -141,19 +140,19 @@ fun CustomBottomNavigation(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class) // Cần @OptIn cho BadgedBox
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomNavItemView(
     item: BottomNavItem,
     isSelected: Boolean,
     onClick: () -> Unit,
-    badgeCount: Int = 0 // <-- THÊM THAM SỐ NÀY
+    badgeCount: Int = 0
 ) {
     IconButton(
         onClick = onClick,
         modifier = Modifier.size(48.dp)
     ) {
-        BadgedBox( // <-- SỬ DỤNG BadgedBox
+        BadgedBox(
             badge = {
                 if (badgeCount > 0) {
                     Badge(
@@ -177,20 +176,17 @@ fun BottomNavItemView(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreenWithBottomNav(outerNavController: NavController) { // Renamed parameter
+fun MainScreenWithBottomNav(outerNavController: NavController) {
     val bottomNavController = rememberNavController()
     val currentBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val startRouteForBottomNav = "home"
 
-    // Thu thập số lượng giỏ hàng từ CartStateHolder
-    val cartItemCount by CartStateHolder.cartItemCount.collectAsState() // <-- THU THẬP SỐ LƯỢNG GIỎ HÀNG
+    val cartItemCount by CartStateHolder.cartItemCount.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context.applicationContext) }
 
-    // Fetch số lượng giỏ hàng khi màn hình chính được tạo
-    // Điều này đảm bảo badge hiển thị ngay khi mở app
     LaunchedEffect(Unit) {
         val token = tokenManager.getToken()
         if (!token.isNullOrEmpty()) {
@@ -201,28 +197,27 @@ fun MainScreenWithBottomNav(outerNavController: NavController) { // Renamed para
                     if (response.code == 200) {
                         val cartResult = response.data
                         cartResult?.let { result ->
-                            // Tính tổng số lượng từ tất cả các item trong giỏ hàng
                             val itemCount = result.items?.size ?: 0
                             CartStateHolder.updateCartItemCount(itemCount)
                             Log.d("MainScreen", "Initial cart item count fetched: $itemCount")
                         }
                     } else {
                         Log.e("MainScreen", "Failed to fetch initial cart count: ${response.message}")
-                        CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu API trả lỗi
+                        CartStateHolder.updateCartItemCount(0)
                     }
                 } catch (e: HttpException) {
                     Log.e("MainScreen", "HTTP Exception fetching initial cart: ${e.code()} - ${e.message()}")
-                    CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu lỗi HTTP
+                    CartStateHolder.updateCartItemCount(0)
                 } catch (e: IOException) {
                     Log.e("MainScreen", "IO Exception fetching initial cart: ${e.message}")
-                    CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu lỗi mạng
+                    CartStateHolder.updateCartItemCount(0)
                 } catch (e: Exception) {
                     Log.e("MainScreen", "General Exception fetching initial cart: ${e.message}")
-                    CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu lỗi không xác định
+                    CartStateHolder.updateCartItemCount(0)
                 }
             }
         } else {
-            CartStateHolder.updateCartItemCount(0) // Đặt về 0 nếu không có token (chưa đăng nhập)
+            CartStateHolder.updateCartItemCount(0)
             Log.d("MainScreen", "No token found, initial cart count set to 0.")
         }
     }
@@ -232,7 +227,7 @@ fun MainScreenWithBottomNav(outerNavController: NavController) { // Renamed para
             CustomBottomNavigation(
                 navController = bottomNavController,
                 currentRoute = currentBackStackEntry?.destination?.route ?: startRouteForBottomNav,
-                cartItemCount = cartItemCount // <-- TRUYỀN SỐ LƯỢNG GIỎ HÀNG
+                cartItemCount = cartItemCount
             )
         },
         containerColor = Color(0xFFF5F5F5)
@@ -271,7 +266,6 @@ fun MainScreenWithBottomNav(outerNavController: NavController) { // Renamed para
                     }
                 }
                 composable("setting") {
-                    // Pass the outerNavController to SettingsScreen
                     SettingsScreen(navController = outerNavController)
                 }
             }

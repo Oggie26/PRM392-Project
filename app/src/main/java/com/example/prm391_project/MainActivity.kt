@@ -1,8 +1,9 @@
-// File: app/src/main/java/com/example/prm391_project/MainActivity.kt
 package com.example.prm391_project
 
 import TokenManager
 import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -35,7 +36,7 @@ import java.io.IOException
 class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
-    private var pendingCartNavigation = false // Flag để theo dõi navigation đang chờ
+    private var pendingCartNavigation = false
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -71,19 +72,25 @@ class MainActivity : ComponentActivity() {
                 // State để theo dõi navigation đến cart
                 var shouldNavigateToCart by remember { mutableStateOf(false) }
 
-                // Xử lý navigation từ notification
+                // Kiểm tra token trước khi xử lý navigation từ notification
                 LaunchedEffect(navController) {
-                    handleInitialIntent(intent)
-                    if (pendingCartNavigation) {
-                        shouldNavigateToCart = true
-                        pendingCartNavigation = false
+                    val tokenManager = TokenManager(applicationContext)
+                    val token = tokenManager.getToken()
+                    if (token.isNullOrEmpty()) {
+                        Log.d("MainActivity", "No token found, skipping cart navigation")
+                        pendingCartNavigation = false // Reset để tránh điều hướng không mong muốn
+                    } else {
+                        handleInitialIntent(intent)
+                        if (pendingCartNavigation) {
+                            shouldNavigateToCart = true
+                            pendingCartNavigation = false
+                        }
                     }
                 }
 
                 // Xử lý navigation đến cart khi cần thiết
                 LaunchedEffect(shouldNavigateToCart) {
                     if (shouldNavigateToCart) {
-                        // Đợi một chút để đảm bảo navigation graph đã được khởi tạo
                         delay(500)
                         navigateToCart()
                         shouldNavigateToCart = false
@@ -107,7 +114,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Xử lý intent khi activity resume từ background
         handleNewIntent(intent)
     }
 
@@ -131,9 +137,13 @@ class MainActivity : ComponentActivity() {
         intent?.let {
             val navigateToCart = it.getBooleanExtra("navigate_to_cart", false)
             if (navigateToCart) {
+                val tokenManager = TokenManager(applicationContext)
+                if (tokenManager.getToken().isNullOrEmpty()) {
+                    Log.d("MainActivity", "No token found, skipping cart navigation")
+                    return
+                }
                 Log.d("MainActivity", "New intent detected: navigate to cart")
                 navigateToCart()
-                // Xóa flag để tránh navigation lại
                 it.removeExtra("navigate_to_cart")
                 it.removeExtra("navigate_to_route")
             }
@@ -142,7 +152,6 @@ class MainActivity : ComponentActivity() {
 
     private fun navigateToCart() {
         try {
-            // Đầu tiên, đảm bảo chúng ta ở trong MainAppGraph
             if (navController.currentDestination?.route != Screen.MainAppGraph.route) {
                 navController.navigate(Screen.MainAppGraph.route) {
                     popUpTo(navController.graph.id) {
@@ -152,12 +161,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // Sau đó navigate đến cart trong bottom navigation
-            // Cần delay ngắn để đảm bảo MainAppGraph đã được load
             CoroutineScope(Dispatchers.Main).launch {
-                delay(100) // Delay ngắn
+                delay(100)
                 try {
-                    // Sử dụng route của cart trong bottom navigation
                     navController.navigate("cart") {
                         popUpTo(Screen.Home.route) {
                             saveState = true
@@ -176,10 +182,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkCartAndShowNotification() {
-        // Kiểm tra xem có thể hiển thị heads-up notification không
         if (!NotificationHelper.canShowHeadsUpNotification(this)) {
             Log.w("MainActivity", "Cannot show heads-up notification. Check notification settings.")
-            // Có thể hiển thị dialog hướng dẫn user
             showNotificationSettingsDialog()
             return
         }
@@ -204,7 +208,6 @@ class MainActivity : ComponentActivity() {
 
                     withContext(Dispatchers.Main) {
                         if (totalQuantity > 0) {
-                            // Delay một chút để đảm bảo app đã sẵn sàng
                             delay(1000)
                             NotificationHelper.showCartNotification(applicationContext, totalQuantity)
                             Log.d("MainActivity", "Cart has $totalQuantity items. Showing heads-up notification.")
@@ -225,13 +228,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Thêm method để hiển thị dialog hướng dẫn notification settings
     private fun showNotificationSettingsDialog() {
-        // Có thể implement AlertDialog để hướng dẫn user
-        // hoặc navigate đến notification settings
         Log.d("MainActivity", "Should show notification settings dialog")
-
-        // Tạo intent để mở notification settings
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                 putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
@@ -241,13 +239,20 @@ class MainActivity : ComponentActivity() {
                 data = android.net.Uri.parse("package:$packageName")
             }
         }
-
-        // Có thể hiển thị dialog trước khi mở settings
-        // startActivity(intent)
+        startActivity(intent)
     }
 
-    // Thêm method để test notification (có thể gọi từ button trong UI)
-    fun testNotification() {
-        NotificationHelper.showTestNotification(this)
+    companion object {
+        fun restartApp(context: Context) {
+            val tokenManager = TokenManager(context)
+            tokenManager.clearToken() // Đảm bảo xóa token khi restart
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            if (context is Activity) {
+                context.finish()
+            }
+        }
     }
 }

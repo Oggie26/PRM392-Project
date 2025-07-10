@@ -1,104 +1,110 @@
 package com.example.prm391_project
 
-import TokenManager // Import TokenManager của bạn
+import TokenManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
-
-// Import tất cả các màn hình cần thiết
 import com.example.prm391_project.screen.user.MainScreenWithBottomNav
-import com.example.prm391_project.screens.LoginScreen // Đảm bảo đúng import
+import com.example.prm391_project.screens.LoginScreen
 import com.example.prm391_project.screen.auth.RegisterScreen
 import com.example.prm391_project.screens.user.UpdateProfileScreen
+import android.util.Log
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.delay
 
-
-// Define your navigation routes
 sealed class Screen(val route: String) {
-    // Authentication routes
     object Login : Screen("login_route")
     object Register : Screen("register_route")
-
-    // Main application graph route (this graph contains the bottom navigation)
     object MainAppGraph : Screen("main_app_graph")
-
-    // Routes within the MainAppGraph that are managed by MainScreenWithBottomNav
-    // These routes are used internally by MainScreenWithBottomNav's NavHost
-    // They are also used as `startDestination` for the MainAppGraph itself (e.g., Home)
     object Home : Screen("home_screen")
     object ProductCart : Screen("product_cart_screen")
     object Favorites : Screen("favorites_screen")
     object Profile : Screen("profile_screen")
-    object UpdateProfile : Screen("update_profile_screen") // THÊM DÒNG NÀY
+    object UpdateProfile : Screen("update_profile_screen")
 }
 
 @Composable
-fun AppNavController(navController: NavHostController) { // Xóa isLoggedIn nếu bạn không truyền từ ngoài vào
-    val context = androidx.compose.ui.platform.LocalContext.current
+fun AppNavController(navController: NavHostController) {
+    val context = LocalContext.current
     val tokenManager = remember { TokenManager(context.applicationContext) }
 
+    // State để theo dõi trạng thái đăng nhập
+    var isLoggedIn by remember { mutableStateOf<Boolean?>(null) }
+
+    // Kiểm tra token ban đầu
     LaunchedEffect(Unit) {
         val token = tokenManager.getToken()
-        if (token.isNullOrEmpty()) {
-            // Nếu không có token, điều hướng đến màn hình Login
-            // popupTo để clear stack nếu có màn hình khác và launchSingleTop
-            navController.navigate(Screen.Login.route) {
-                popUpTo(navController.graph.id) {
-                    inclusive = true
+        Log.d("AppNavController", "Initial token check: $token")
+        isLoggedIn = !token.isNullOrEmpty()
+    }
+
+    // Khi isLoggedIn thay đổi, điều hướng tương ứng
+    LaunchedEffect(isLoggedIn) {
+        // Đợi một chút để đảm bảo token được kiểm tra
+        delay(100)
+        Log.d("AppNavController", "isLoggedIn: $isLoggedIn, current route: ${navController.currentDestination?.route}")
+
+        when (isLoggedIn) {
+            true -> {
+                // Có token, chỉ điều hướng nếu chưa ở MainAppGraph
+                if (navController.currentDestination?.route != Screen.MainAppGraph.route) {
+                    navController.navigate(Screen.MainAppGraph.route) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                    Log.d("AppNavController", "Navigated to MainAppGraph")
                 }
-                launchSingleTop = true
             }
-        } else {
-            // Nếu có token, điều hướng đến màn hình chính (MainAppGraph)
-            navController.navigate(Screen.MainAppGraph.route) {
-                popUpTo(navController.graph.id) {
-                    inclusive = true
+            false -> {
+                // Không có token, chỉ điều hướng nếu chưa ở Login
+                if (navController.currentDestination?.route != Screen.Login.route) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                    Log.d("AppNavController", "Navigated to Login")
                 }
-                launchSingleTop = true
+            }
+            null -> {
+                // Đang loading, không làm gì
+                Log.d("AppNavController", "Waiting for token check")
             }
         }
     }
 
-    // Đặt startDestination là một route tạm thời (hoặc null) vì LaunchedEffect sẽ xử lý điều hướng ban đầu
-    // Hoặc đặt là route mặc định nào đó mà bạn muốn hiển thị trong chốc lát
+    // Xác định startDestination dựa trên trạng thái ban đầu
+    val startDestination = Screen.Login.route // Luôn bắt đầu từ Login để đảm bảo kiểm tra token
+
     NavHost(
         navController = navController,
-        startDestination = "splash_screen_or_initial_check" // Route tạm thời cho lần đầu khởi tạo
+        startDestination = startDestination
     ) {
-        // Đây là một route tạm thời để LaunchedEffect có thể hoạt động mà không bị lỗi
-        // Bạn có thể đặt một màn hình Splash Screen ở đây
-        composable("splash_screen_or_initial_check") {
-            // Có thể hiển thị một ProgressBar hoặc Lottie animation nhỏ tại đây
-            // Hoặc để trống nếu bạn muốn chuyển hướng nhanh
-            // Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            //     Text("Đang kiểm tra đăng nhập...")
-            // }
-        }
-
         composable(Screen.Login.route) {
             LoginScreen(navController)
         }
+
         composable(Screen.Register.route) {
             RegisterScreen(navController)
         }
+
         composable(Screen.UpdateProfile.route) {
             UpdateProfileScreen(navController = navController)
         }
-        // MainAppGraph chứa MainScreenWithBottomNav và các tab của nó
+
         navigation(
-            startDestination = Screen.Home.route, // Route mặc định khi vào MainAppGraph
+            startDestination = Screen.Home.route,
             route = Screen.MainAppGraph.route
         ) {
             composable(Screen.Home.route) {
                 MainScreenWithBottomNav(outerNavController = navController)
             }
-            // Không cần định nghĩa lại các composable cho "cart", "map", "chat", "setting" ở đây,
-            // vì chúng đã được quản lý bên trong NavHost của MainScreenWithBottomNav.
-            // Screen.ProductCart.route không cần thiết ở đây trừ khi bạn muốn điều hướng trực tiếp tới nó
-            // từ bên ngoài MainAppGraph.
         }
     }
 }
