@@ -1,6 +1,5 @@
 package com.example.prm391_project.screen.user
 
-import HomeScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -248,13 +247,13 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
                     ProductCartScreen(navController = bottomNavController)
                 }
                 composable("map") {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text("Map Screen", style = MaterialTheme.typography.headlineMedium)
-                    }
+//                    Column(
+//                        modifier = Modifier.fillMaxSize(),
+//                        horizontalAlignment = Alignment.CenterHorizontally,
+//                        verticalArrangement = Arrangement.Center
+//                    ) {
+                        MapScreen(navController = bottomNavController)
+//                    }
                 }
                 composable("chat") {
                     Column(

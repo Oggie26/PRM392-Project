@@ -10,4 +10,7 @@ interface ProductService {
     suspend fun getProductDetail(
         @Path("productId") productId: String,
     ): IResponse<ProductDetailResponse>
+
+    @GET("api/products")
+    suspend fun getProducts(): IResponse<List<ProductDetailResponse>>
 }
