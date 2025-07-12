@@ -292,7 +292,7 @@ fun ProductDetailScreen(
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.height(12.dp))
 
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -340,7 +340,7 @@ fun ProductDetailScreen(
                                         Text("(15 Đánh giá)", color = Color.Gray)
                                     }
 
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
 
                                     Text("Mô tả", fontWeight = FontWeight.SemiBold)
                                     Text(
@@ -349,7 +349,7 @@ fun ProductDetailScreen(
                                         fontSize = 14.sp
                                     )
 
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
 
                                     Text("Loại vải", fontWeight = FontWeight.SemiBold)
                                     Text(
@@ -358,7 +358,7 @@ fun ProductDetailScreen(
                                         fontSize = 14.sp
                                     )
 
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
 
                                     Text("Màu", fontWeight = FontWeight.SemiBold)
                                     Row {
@@ -373,15 +373,15 @@ fun ProductDetailScreen(
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
 
                                     Text("Kích thước", fontWeight = FontWeight.SemiBold)
                                     Row {
                                         product!!.sizes.forEach { size ->
                                             OutlinedButton(
                                                 onClick = { selectedSize = size.size },
-                                                modifier = Modifier.padding(end = 8.dp),
-                                                shape = RoundedCornerShape(8.dp),
+                                                modifier = Modifier.padding(end = 4.dp),
+                                                shape = RoundedCornerShape(6.dp),
                                                 colors = ButtonDefaults.outlinedButtonColors(
                                                     containerColor = if (selectedSize == size.size) Color(0xFFC4C3C3) else Color.Transparent
                                                 )
@@ -391,41 +391,86 @@ fun ProductDetailScreen(
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
 
                                     // Tăng / giảm số lượng
-                                    Text("Số lượng", fontWeight = FontWeight.SemiBold)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
+//                                    Text("Số lượng", fontWeight = FontWeight.SemiBold)
+//                                    Spacer(modifier = Modifier.height(8.dp))
+//                                    Row(
+//                                        verticalAlignment = Alignment.CenterVertically
+//                                    ) {
+//                                        Button(
+//                                            onClick = { if (quantity > 1) quantity-- },
+//                                            modifier = Modifier.size(36.dp),
+//                                            shape = RoundedCornerShape(4.dp),
+//                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000000)),
+//                                            contentPadding = PaddingValues(0.dp)
+//                                        ) {
+//                                            Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+//                                        }
+//
+//                                        Text(
+//                                            text = quantity.toString(),
+//                                            fontSize = 20.sp,
+//                                            fontWeight = FontWeight.Medium,
+//                                            modifier = Modifier.padding(horizontal = 24.dp)
+//                                        )
+//
+//                                        Button(
+//                                            onClick = { quantity++ },
+//                                            modifier = Modifier.size(36.dp),
+//                                            shape = RoundedCornerShape(4.dp),
+//                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000000)),
+//                                            contentPadding = PaddingValues(0.dp)
+//                                        ) {
+//                                            Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+//                                        }
+//                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(150.dp), // Chiều cao bạn có thể chỉnh tùy ý
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Button(
-                                            onClick = { if (quantity > 1) quantity-- },
-                                            modifier = Modifier.size(36.dp),
-                                            shape = RoundedCornerShape(4.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000000)),
-                                            contentPadding = PaddingValues(0.dp)
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
                                         ) {
-                                            Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                                        }
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                Button(
+                                                    onClick = { if (quantity > 1) quantity-- },
+                                                    modifier = Modifier.size(36.dp),
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000000)),
+                                                    contentPadding = PaddingValues(0.dp)
+                                                ) {
+                                                    Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                                }
 
-                                        Text(
-                                            text = quantity.toString(),
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            modifier = Modifier.padding(horizontal = 24.dp)
-                                        )
+                                                Text(
+                                                    text = quantity.toString(),
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    modifier = Modifier.padding(horizontal = 24.dp)
+                                                )
 
-                                        Button(
-                                            onClick = { quantity++ },
-                                            modifier = Modifier.size(36.dp),
-                                            shape = RoundedCornerShape(4.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000000)),
-                                            contentPadding = PaddingValues(0.dp)
-                                        ) {
-                                            Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                                Button(
+                                                    onClick = { quantity++ },
+                                                    modifier = Modifier.size(36.dp),
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000000)),
+                                                    contentPadding = PaddingValues(0.dp)
+                                                ) {
+                                                    Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                                }
+                                            }
                                         }
                                     }
+
                                 }
 
                                 // Hiển thị thông báo thành công
