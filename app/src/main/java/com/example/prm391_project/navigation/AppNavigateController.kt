@@ -17,6 +17,10 @@ import com.example.prm391_project.screen.auth.RegisterScreen
 import com.example.prm391_project.screens.user.UpdateProfileScreen
 import android.util.Log
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.prm391_project.screen.user.ListOrderScreen
+import com.example.prm391_project.screen.user.OrderDetailScreen
 import kotlinx.coroutines.delay
 
 sealed class Screen(val route: String) {
@@ -28,6 +32,11 @@ sealed class Screen(val route: String) {
     object Favorites : Screen("favorites_screen")
     object Profile : Screen("profile_screen")
     object UpdateProfile : Screen("update_profile_screen")
+    object ListOrder : Screen("list_order_screen")
+    object OrderDetail : Screen("order_detail_screen/{orderId}") {
+        fun createRoute(orderId: Int) = "order_detail_screen/$orderId"
+    }
+
 }
 
 @Composable
@@ -97,6 +106,19 @@ fun AppNavController(navController: NavHostController) {
         composable(Screen.UpdateProfile.route) {
             UpdateProfileScreen(navController = navController)
         }
+
+        composable(Screen.ListOrder.route) {
+            ListOrderScreen(navController)
+        }
+
+        composable(
+            route = Screen.OrderDetail.route,
+            arguments = listOf(navArgument("orderId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getInt("orderId") ?: 0
+            OrderDetailScreen(navController, orderId)
+        }
+
 
         navigation(
             startDestination = Screen.Home.route,
