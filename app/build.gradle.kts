@@ -86,6 +86,7 @@ dependencies {
     implementation("com.airbnb.android:lottie-compose:6.4.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // <--- THÊM DÒNG NÀY
 
+    implementation ("io.socket:socket.io-client:2.1.0")
 
 
     implementation(libs.retrofit)

@@ -257,13 +257,14 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
 //                    }
                 }
                 composable("chat") {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text("Chat Screen", style = MaterialTheme.typography.headlineMedium)
-                    }
+//                    Column(
+//                        modifier = Modifier.fillMaxSize(),
+//                        horizontalAlignment = Alignment.CenterHorizontally,
+//                        verticalArrangement = Arrangement.Center
+//                    ) {
+//                        Text("Chat Screen", style = MaterialTheme.typography.headlineMedium)
+//                    }
+                    ChatScreen(navController = bottomNavController)
                 }
                 composable("setting") {
                     SettingsScreen(navController = outerNavController)
