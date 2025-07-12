@@ -125,7 +125,6 @@ suspend fun getCurrentLocation(context: Context): Location? {
 @SuppressLint("MissingPermission")
 @Composable
 fun MapScreen(navController: NavController) {
-fun MapScreen(navController: NavController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val permissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
