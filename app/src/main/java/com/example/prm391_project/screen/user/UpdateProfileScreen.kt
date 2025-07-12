@@ -259,26 +259,23 @@ fun UpdateProfileScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp)
                             )
-                            OutlinedTextField(
-                                value = birthday,
-                                onValueChange = { birthday = it },
-                                label = { Text("Ngày sinh (YYYY-MM-DD)") },
-                                leadingIcon = { Icon(Icons.Default.Cake, contentDescription = "Birthday") },
-                                readOnly = true,
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { datePickerDialog.show() },
-                                shape = RoundedCornerShape(12.dp)
-                            )
+                                    .clickable { datePickerDialog.show() }
+                            ) {
+                                OutlinedTextField(
+                                    value = birthday,
+                                    onValueChange = {},
+                                    label = { Text("Ngày sinh (YYYY-MM-DD)") },
+                                    leadingIcon = { Icon(Icons.Default.Cake, contentDescription = "Birthday") },
+                                    enabled = false,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            }
+
                             GenderSelection(selectedGender = gender, onGenderSelected = { gender = it })
-                            OutlinedTextField(
-                                value = address,
-                                onValueChange = { address = it },
-                                label = { Text("Địa chỉ") },
-                                leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = "Address") },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            )
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -310,10 +307,7 @@ fun UpdateProfileScreen(
                                     Toast.makeText(context, "Vui lòng chọn ngày sinh.", Toast.LENGTH_SHORT).show()
                                     return@Button
                                 }
-                                if (address.isEmpty()) {
-                                    Toast.makeText(context, "Vui lòng nhập địa chỉ.", Toast.LENGTH_SHORT).show()
-                                    return@Button
-                                }
+                                
                                 if (gender.isEmpty()) {
                                     Toast.makeText(context, "Vui lòng chọn giới tính.", Toast.LENGTH_SHORT).show()
                                     return@Button
@@ -440,7 +434,7 @@ fun UpdateProfileScreen(
 @Composable
 fun GenderSelection(selectedGender: String, onGenderSelected: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    val genderOptions = listOf("MALE", "FEMALE", "OTHER")
+    val genderOptions = listOf("Nam", "Nữ", "Khác")
 
     ExposedDropdownMenuBox(
         expanded = expanded,

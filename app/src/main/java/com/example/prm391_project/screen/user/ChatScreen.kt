@@ -50,6 +50,8 @@ import java.net.URI
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import android.content.SharedPreferences
+import androidx.compose.material.icons.filled.AccountTree
 
 // Data classes
 interface IResponse<T> {
@@ -443,6 +445,22 @@ fun ChatScreen(navController: NavController) {
         }
     }
 
+// 🆕 SharedPreferences for IP persistence
+    val sharedPrefs = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+
+// 🆕 Load saved IP
+    LaunchedEffect(Unit) {
+        val savedIp = sharedPrefs.getString("server_ip", null)
+        if (!savedIp.isNullOrEmpty()) {
+            ipInput = savedIp
+            serverIp = savedIp
+            showIpDialog = false
+            connectToServer(savedIp)
+        }
+    }
+
+
+
     // Auto-scroll to bottom
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -519,10 +537,12 @@ fun ChatScreen(navController: NavController) {
                     onClick = {
                         if (ipInput.isNotBlank() && !isConnecting) {
                             serverIp = ipInput
+                            sharedPrefs.edit().putString("server_ip", ipInput).apply() // 🆕 Save IP
                             showIpDialog = false
                             connectToServer(serverIp)
                         }
-                    },
+                    }
+                    ,
                     enabled = !isConnecting && ipInput.isNotBlank()
                 ) {
                     Text("Kết nối")
@@ -563,6 +583,11 @@ fun ChatScreen(navController: NavController) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        showIpDialog = true // 🆕 Hiện lại dialog
+                    }) {
+                        Icon(Icons.Default.AccountTree, contentDescription = "Server Settings")
+                    }
                     if (error != null) {
                         IconButton(onClick = { connectToServer(serverIp) }) {
                             Icon(Icons.Default.Refresh, contentDescription = "Retry")
