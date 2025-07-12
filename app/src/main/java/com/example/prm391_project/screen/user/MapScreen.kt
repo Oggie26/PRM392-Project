@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 //import com.google.accompanist.permissions.*
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
@@ -16,7 +17,7 @@ import com.google.maps.android.compose.*
 //import kotlinx.coroutines.tasks.await
 
 @Composable
-fun MapScreen() {
+fun MapScreen(navController: NavController) {
     val context = LocalContext.current
 
     val fixedLatLng = LatLng(10.7942, 106.7223)
