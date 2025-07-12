@@ -45,6 +45,7 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.prm391_project.Screen
 import java.text.DecimalFormat
 import java.util.Locale
 
@@ -311,7 +312,9 @@ fun HomeScreen(navController: NavController) {
                                 ProductItem(
                                     product = product,
                                     modifier = Modifier.weight(1f),
-                                    onProductClick = { /* Navigate to product detail */ }
+                                    onProductClick = {
+                                        navController.navigate(Screen.ProductDetail.createRoute(product.id.toString()))
+                                    }
                                 )
                             }
                             if (row.size < 2) {

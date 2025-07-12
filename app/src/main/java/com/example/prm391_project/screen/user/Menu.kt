@@ -241,10 +241,11 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
                 startDestination = startRouteForBottomNav
             ) {
                 composable("home") {
-                    HomeScreen(navController = bottomNavController)
+//                    HomeScreen(navController = bottomNavController)
+                    HomeScreen(navController = outerNavController)
                 }
                 composable("cart") {
-                    ProductCartScreen(navController = bottomNavController)
+                    ProductCartScreen(navController = outerNavController)
                 }
                 composable("map") {
 //                    Column(

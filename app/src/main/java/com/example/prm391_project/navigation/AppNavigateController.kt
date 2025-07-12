@@ -15,6 +15,7 @@ import com.example.prm391_project.screen.user.MainScreenWithBottomNav
 import com.example.prm391_project.screens.LoginScreen
 import com.example.prm391_project.screen.auth.RegisterScreen
 import com.example.prm391_project.screens.user.UpdateProfileScreen
+import com.example.prm391_project.screen.user.ProductDetailScreen
 import android.util.Log
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
@@ -22,6 +23,7 @@ import androidx.navigation.navArgument
 import com.example.prm391_project.screen.user.ListOrderScreen
 import com.example.prm391_project.screen.user.OrderDetailScreen
 import kotlinx.coroutines.delay
+//import androidx.navigation.NavController
 
 sealed class Screen(val route: String) {
     object Login : Screen("login_route")
@@ -32,9 +34,13 @@ sealed class Screen(val route: String) {
     object Favorites : Screen("favorites_screen")
     object Profile : Screen("profile_screen")
     object UpdateProfile : Screen("update_profile_screen")
+
     object ListOrder : Screen("list_order_screen")
     object OrderDetail : Screen("order_detail_screen/{orderId}") {
         fun createRoute(orderId: Int) = "order_detail_screen/$orderId"
+    }
+    object ProductDetail : Screen("product_detail/{productId}"){
+        fun createRoute(productId: String) = "product_detail/$productId"
     }
 
 }
@@ -119,6 +125,13 @@ fun AppNavController(navController: NavHostController) {
             OrderDetailScreen(navController, orderId)
         }
 
+        composable(
+            route = Screen.ProductDetail.route,
+            arguments = listOf(navArgument("productId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId") ?: ""
+            ProductDetailScreen(navController, productId)
+        }
 
         navigation(
             startDestination = Screen.Home.route,
