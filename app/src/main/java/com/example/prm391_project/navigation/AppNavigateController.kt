@@ -22,6 +22,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.prm391_project.screen.user.ListOrderScreen
 import com.example.prm391_project.screen.user.OrderDetailScreen
+import com.example.prm391_project.ui.checkout.CheckoutScreen
 import kotlinx.coroutines.delay
 //import androidx.navigation.NavController
 
@@ -42,6 +43,7 @@ sealed class Screen(val route: String) {
     object ProductDetail : Screen("product_detail/{productId}"){
         fun createRoute(productId: String) = "product_detail/$productId"
     }
+    object Checkout : Screen("checkout_screen")
 
 }
 
@@ -116,7 +118,9 @@ fun AppNavController(navController: NavHostController) {
         composable(Screen.ListOrder.route) {
             ListOrderScreen(navController)
         }
-
+        composable(Screen.Checkout.route) {
+            CheckoutScreen(navController = navController)
+        }
         composable(
             route = Screen.OrderDetail.route,
             arguments = listOf(navArgument("orderId") { type = NavType.IntType })
@@ -141,5 +145,6 @@ fun AppNavController(navController: NavHostController) {
                 MainScreenWithBottomNav(outerNavController = navController)
             }
         }
+
     }
 }

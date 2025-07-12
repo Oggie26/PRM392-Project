@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -104,11 +105,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        // Handle deep link if app launched from callback
+        handleDeepLink(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        handleDeepLink(intent)
         handleNewIntent(intent)
     }
 
@@ -116,7 +120,15 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         handleNewIntent(intent)
     }
-
+    private fun handleDeepLink(intent: Intent?) {
+        intent?.data?.let { uri: Uri ->
+            if (uri.scheme == "myapp" && uri.host == "checkout") {
+                Log.d("MainActivity", "Deep link received: $uri")
+                // Điều hướng NavController qua Compose deep link
+                navController.handleDeepLink(intent)
+            }
+        }
+    }
     private fun handleInitialIntent(intent: Intent?) {
         intent?.let {
             val navigateToCart = it.getBooleanExtra("navigate_to_cart", false)

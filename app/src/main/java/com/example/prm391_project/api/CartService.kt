@@ -16,14 +16,14 @@ interface CartService {
     @PATCH("carts/update-quantity")
     suspend fun updateQuantity(
         @Header("Authorization") token: String,
-        @Query("productId") productId: String, // <-- Thêm productId
-        @Query("quantity") quantity: Int      // <-- Thêm quantity
+        @Query("productId") productId: String,
+        @Query("quantity") quantity: Int
     ): IResponse<CartResult>
 
     @DELETE("carts/remove")
     suspend fun removeItemsFromCart(
         @Header("Authorization") token: String,
-        @Query("productIds") productIds: List<String> // <-- Danh sách productId cần xóa
+        @Query("productIds") productIds: List<String>
     ): IResponse<CartResult>
 
     @POST("carts")
@@ -33,4 +33,6 @@ interface CartService {
         @Query("quantity") quantity: Int,
         @Query("size") size: String,
     ): IResponse<CartResult>
+
+
 }
