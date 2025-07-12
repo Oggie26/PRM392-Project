@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">PRM391_Project</string>
+    <string name="mapbox_access_token">pk.eyJ1IjoiZHVjdHRzZTE3Mjc2MCIsImEiOiJjbWN6NGkyOTMwdTV5MmpzYTVibngyZW1oIn0.0uxPTusaG1JY5f3NuZ8O4Q</string>
 </resources>
