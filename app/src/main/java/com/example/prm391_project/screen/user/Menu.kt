@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.example.prm391_project.ui.checkout.CheckoutScreen
 
 data class BottomNavItem(
     val route: String,
@@ -269,6 +270,7 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
                 composable("setting") {
                     SettingsScreen(navController = outerNavController)
                 }
+
             }
         }
     }

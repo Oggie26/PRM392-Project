@@ -7,5 +7,6 @@ data class IResponse<T>(
     var code: Int,
     @SerializedName("result") // <-- THÊM DÒNG NÀY: Ánh xạ trường JSON "result" vào thuộc tính "data" của Kotlin
     val data: T?,
-    val message: String
+    val message: String,
+    val redirectUrl: String?
 )
