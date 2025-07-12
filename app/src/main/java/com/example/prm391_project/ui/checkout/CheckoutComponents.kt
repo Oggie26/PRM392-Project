@@ -324,7 +324,7 @@ fun PaymentMethodCard(
 fun OrderItem(name: String, quantity: Int, price: Int) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text("$name x$quantity")
-        Text("$$price")
+        Text("đ$price")
     }
 }
 
@@ -333,7 +333,7 @@ fun OrderItem(name: String, quantity: Int, price: Int) {
 fun SummaryRow(label: String, value: Int) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label)
-        Text("$$value")
+        Text("đ$value")
     }
 }
 

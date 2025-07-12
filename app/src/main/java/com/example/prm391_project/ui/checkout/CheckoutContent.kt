@@ -63,11 +63,12 @@ fun CheckoutContent(
             Box(
                 Modifier
                     .fillMaxWidth()
+                    .height(80.dp)
                     .background(
                         Color.Black,
                         shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                     )
-                    .padding(16.dp)
+                    .padding(20.dp)
             ) {
                 Row(
                     Modifier.fillMaxWidth(),
