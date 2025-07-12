@@ -26,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -38,8 +40,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.compose.foundation.Canvas
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.geometry.Offset
 import coil.compose.AsyncImage
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
@@ -99,6 +99,8 @@ fun ProductCartScreen(navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context.applicationContext) }
+    // Add state for tracking items being deleted
+    var deletingItems by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
 
     val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
 
@@ -162,12 +164,15 @@ fun ProductCartScreen(navController: NavController) {
             }
         }
     }
-// Hàm xóa sản phẩm khỏi giỏ hàng
+
+    // Hàm xóa sản phẩm khỏi giỏ hàng
     val deleteCartItem: (String) -> Unit = { productId ->
         coroutineScope.launch {
+            deletingItems = deletingItems + (productId to true)
             val token = tokenManager.getToken()
             if (token.isNullOrEmpty()) {
                 Toast.makeText(context, "Vui lòng đăng nhập để xóa sản phẩm.", Toast.LENGTH_SHORT).show()
+                deletingItems = deletingItems - productId
                 return@launch
             }
 
@@ -187,6 +192,8 @@ fun ProductCartScreen(navController: NavController) {
             } catch (e: Exception) {
                 Toast.makeText(context, "Lỗi khi xóa sản phẩm: ${e.message}", Toast.LENGTH_SHORT).show()
                 Log.e("ProductCartScreen", "Error deleting item: ${e.message}", e)
+            } finally {
+                deletingItems = deletingItems - productId
             }
         }
     }
@@ -323,10 +330,13 @@ fun ProductCartScreen(navController: NavController) {
                                     updateQuantityLocally(item.id, newQuantity)
                                 },
                                 onDelete = {
-                                    deleteCartItem(item.id) // <-- Gọi API xóa
+                                    deleteCartItem(item.id)
+                                },
+                                isDeleting = deletingItems[item.id] == true,
+                                onItemClick = {
+                                    navController.navigate(Screen.ProductDetail.createRoute(item.id))
                                 }
                             )
-
                         }
                         item {
                             Spacer(modifier = Modifier.height(100.dp))
@@ -342,7 +352,6 @@ fun ProductCartScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Column {
-
                         Canvas(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -386,7 +395,6 @@ fun ProductCartScreen(navController: NavController) {
                             .height(56.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-
                         OutlinedButton(
                             onClick = {
                                 syncCartWithServer()
@@ -431,10 +439,7 @@ fun ProductCartScreen(navController: NavController) {
                                 color = Color.White
                             )
                         }
-
-
                     }
-
                 }
             }
         }
@@ -445,7 +450,9 @@ fun ProductCartScreen(navController: NavController) {
 fun SwipeableCartItem(
     item: CartItem,
     onQuantityChange: (Int) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isDeleting: Boolean,
+    onItemClick: () -> Unit
 ) {
     var offsetX by remember { mutableFloatStateOf(0f) }
     val maxSwipeDistance = 80.dp
@@ -458,7 +465,9 @@ fun SwipeableCartItem(
     }
 
     Box(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = !isDeleting) { onItemClick() }
     ) {
         Box(
             modifier = Modifier
@@ -467,16 +476,26 @@ fun SwipeableCartItem(
                 .background(Color(0xFFFF4444), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.CenterEnd
         ) {
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.padding(end = 16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+            if (isDeleting) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(end = 16.dp),
+                    strokeWidth = 2.dp
                 )
+            } else {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.padding(end = 16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
 

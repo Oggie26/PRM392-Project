@@ -77,14 +77,21 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation ("androidx.compose.material:material:1.4.3")
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
-//    implementation (libs.androidx.security.crypto.v110alpha06)
+    implementation("com.mapbox.maps:android:11.2.0") // Mapbox Maps v11
+    implementation("com.mapbox.mapboxsdk:mapbox-sdk-services:6.12.0") // Mapbox Java SDK
+    implementation("com.mapbox.mapboxsdk:mapbox-sdk-services:5.8.0")
+
+
     implementation (libs.androidx.security.crypto.ktx.v110alpha06)
     implementation("io.coil-kt.coil3:coil-compose:3.2.0")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("com.airbnb.android:lottie-compose:6.4.0")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4") // <--- THÊM DÒNG NÀY
 
+    implementation ("io.socket:socket.io-client:2.1.0")
 
 
     implementation(libs.retrofit)
@@ -93,8 +100,7 @@ dependencies {
 
     implementation(libs.firebase.appdistribution.gradle)
     implementation(libs.androidx.espresso.core)
-    implementation(libs.androidx.espresso.core)
-    implementation(libs.androidx.espresso.core)
+
     implementation(libs.androidx.animation.core.lint)
     implementation(libs.androidx.security.crypto.ktx)
 

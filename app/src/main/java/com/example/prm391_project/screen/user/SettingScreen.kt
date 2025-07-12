@@ -241,10 +241,9 @@ fun SettingsScreen(
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                InfoRow(label = "Điện thoại", value = userProfileState?.phone ?: "N/A", icon = Icons.Default.Phone)
-                                InfoRow(label = "Ngày sinh", value = userProfileState?.birthday ?: "N/A", icon = Icons.Default.Cake)
-                                InfoRow(label = "Giới tính", value = userProfileState?.gender ?: "N/A", icon = Icons.Default.Face)
-                                InfoRow(label = "Địa chỉ", value = userProfileState?.address ?: "N/A", icon = Icons.Default.LocationOn)
+                                InfoRow(label = "Điện thoại", value = userProfileState?.phone ?: "--/--", icon = Icons.Default.Phone)
+                                InfoRow(label = "Ngày sinh", value = userProfileState?.birthday ?: "--/--", icon = Icons.Default.Cake)
+                                InfoRow(label = "Giới tính", value = userProfileState?.gender ?: "--/--", icon = Icons.Default.Face)
                             }
                         }
                     }
@@ -260,6 +259,16 @@ fun SettingsScreen(
                         icon = Icons.Default.Person,
                         text = "Chỉnh sửa hồ sơ",
                         onClick = { navController.navigate(Screen.UpdateProfile.route) }
+                    )
+                }
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SettingsItem(
+                        icon = Icons.Default.AccessTime,
+                        text = "Lịch sử đặt hàng",
+                        onClick = { navController.navigate(Screen.ListOrder.route) }
                     )
                 }
 

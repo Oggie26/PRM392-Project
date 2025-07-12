@@ -242,11 +242,11 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
                 startDestination = startRouteForBottomNav
             ) {
                 composable("home") {
-                    HomeScreen(navController = bottomNavController)
+//                    HomeScreen(navController = bottomNavController)
+                    HomeScreen(navController = outerNavController)
                 }
                 composable("cart") {
-                    ProductCartScreen(navController = bottomNavController)
-
+                    ProductCartScreen(navController = outerNavController)
                 }
                 composable("map") {
 //                    Column(
@@ -258,13 +258,14 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
 //                    }
                 }
                 composable("chat") {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text("Chat Screen", style = MaterialTheme.typography.headlineMedium)
-                    }
+//                    Column(
+//                        modifier = Modifier.fillMaxSize(),
+//                        horizontalAlignment = Alignment.CenterHorizontally,
+//                        verticalArrangement = Arrangement.Center
+//                    ) {
+//                        Text("Chat Screen", style = MaterialTheme.typography.headlineMedium)
+//                    }
+                    ChatScreen(navController = bottomNavController)
                 }
                 composable(".setting") {
                     SettingsScreen(navController = outerNavController)
