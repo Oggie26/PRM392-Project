@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -32,7 +34,32 @@ import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.text.style.TextOverflow
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
+import java.text.DecimalFormat
+import java.util.Locale
 
+// Data class cho filter categories
+data class FilterCategory(
+    val id: String,
+    val name: String,
+    val count: Int = 0
+)
+
+// Function để format giá tiền
+fun formatPrice(price: Double): String {
+    val formatter = DecimalFormat("#,###")
+    return formatter.format(price)
+}
 
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -43,13 +70,39 @@ fun HomeScreen(navController: NavController) {
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var products by remember { mutableStateOf<List<ProductDetailResponse>>(emptyList()) }
+    var filteredProducts by remember { mutableStateOf<List<ProductDetailResponse>>(emptyList()) }
     var avatarUrl by remember { mutableStateOf<String?>(null) }
     var fullName by remember { mutableStateOf<String?>(null) }
     var searchText by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("All") }
 
-
-//    val token by remember { mutableStateOf(tokenManager.getToken()) }
     val token = remember { mutableStateOf(tokenManager.getToken()) }
+
+    // Function to filter products
+    val filterProducts = {
+        filteredProducts = when {
+            searchText.isBlank() && selectedCategory == "All" -> products
+            searchText.isBlank() -> products.filter { product ->
+                product.productName.contains(selectedCategory, ignoreCase = true) ||
+                        product.description?.contains(selectedCategory, ignoreCase = true) == true
+            }
+            selectedCategory == "All" -> products.filter { product ->
+                product.productName.contains(searchText, ignoreCase = true) ||
+                        product.description?.contains(searchText, ignoreCase = true) == true
+            }
+            else -> products.filter { product ->
+                (product.productName.contains(searchText, ignoreCase = true) ||
+                        product.description?.contains(searchText, ignoreCase = true) == true) &&
+                        (product.productName.contains(selectedCategory, ignoreCase = true) ||
+                                product.description?.contains(selectedCategory, ignoreCase = true) == true)
+            }
+        }
+    }
+
+    // Update filtered products when search text or category changes
+    LaunchedEffect(searchText, selectedCategory, products) {
+        filterProducts()
+    }
 
     val fetchProducts = {
         coroutineScope.launch {
@@ -59,6 +112,7 @@ fun HomeScreen(navController: NavController) {
                 val response = RetrofitClient.productService.getProducts()
                 if (response.code == 200 && response.data != null) {
                     products = response.data
+                    filteredProducts = response.data
                 } else {
                     error = response.message ?: "Đã xảy ra lỗi khi tải sản phẩm."
                 }
@@ -73,8 +127,6 @@ fun HomeScreen(navController: NavController) {
             }
         }
     }
-    Log.d("HomeScreen", "Token: ${token.value}")
-
 
     val fetchUserProfile: (String) -> Unit = { token ->
         coroutineScope.launch {
@@ -111,26 +163,36 @@ fun HomeScreen(navController: NavController) {
 
         fetchProducts()
     }
-    Scaffold { padding ->
+
+    Scaffold(
+        containerColor = Color(0xFFFAFAFA)
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(
-//                    top = 0.dp,
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp
-                )
+                .padding(horizontal = 16.dp)
         ) {
+            Spacer(modifier = Modifier.height(8.dp))
+
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Hi, ${fullName ?: "User"}!", fontSize = 14.sp, color = Color.Gray)
-                    Text("Welcome to Icot!", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Xin chào, ${fullName ?: "Bạn"}!",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "Chào mừng đến Icot!",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
                 }
                 if (!avatarUrl.isNullOrEmpty()) {
                     AsyncImage(
@@ -138,10 +200,11 @@ fun HomeScreen(navController: NavController) {
                         contentDescription = "Avatar",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape),
-                        error = painterResource(id = R.drawable.avatar_svgrepo_com), // fallback ảnh lỗi
-                        fallback = painterResource(id = R.drawable.avatar_svgrepo_com) // fallback nếu null
+                            .size(45.dp)
+                            .clip(CircleShape)
+                            .shadow(2.dp, CircleShape),
+                        error = painterResource(id = R.drawable.avatar_svgrepo_com),
+                        fallback = painterResource(id = R.drawable.avatar_svgrepo_com)
                     )
                 } else {
                     Image(
@@ -149,15 +212,16 @@ fun HomeScreen(navController: NavController) {
                         contentDescription = "Default Avatar",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(45.dp)
                             .clip(CircleShape)
+                            .shadow(2.dp, CircleShape)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Search bar
+            // Simple Search bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -165,13 +229,18 @@ fun HomeScreen(navController: NavController) {
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Tìm kiếm",
+                    tint = Color.Gray,
+                    modifier = Modifier.size(20.dp)
+                )
+
                 TextField(
                     value = searchText,
                     onValueChange = { searchText = it },
-                    placeholder = { Text("Search") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFF2F2F2), shape = RoundedCornerShape(12.dp)),
+                    placeholder = { Text("Tìm kiếm", color = Color.Gray) },
+                    modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
@@ -181,53 +250,73 @@ fun HomeScreen(navController: NavController) {
                     ),
                     singleLine = true
                 )
-
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground), // Đảm bảo file tồn tại
-                    contentDescription = "Search",
-                    modifier = Modifier
-                        .size(24.dp)
-                        .padding(start = 8.dp)
-                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-//            // Filter row
-//            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-//                listOf("All", "Nike", "Adidas", "Converse").forEachIndexed { index, label ->
-//                    val isSelected = index == 0
-//                    Text(
-//                        text = label,
-//                        color = if (isSelected) Color.White else Color.Black,
-//                        modifier = Modifier
-//                            .background(
-//                                if (isSelected) Color.Black else Color(0xFFEFEFEF),
-//                                shape = RoundedCornerShape(20.dp)
-//                            )
-//                            .padding(horizontal = 16.dp, vertical = 8.dp)
-//                    )
-//                }
-//            }
-
+            // Simple filter and result count
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Tìm thấy ${filteredProducts.size} sản phẩm",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Products Grid
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.trackloading))
+                    val progress by animateLottieCompositionAsState(
+                        composition = composition,
+                        iterations = com.airbnb.lottie.compose.LottieConstants.IterateForever
+                    )
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier.size(200.dp)
+                    )
+                }
             } else if (error != null) {
-                Text("Lỗi: $error", color = Color.Red)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                ) {
+                    Text(
+                        text = "Lỗi: $error",
+                        color = Color.Red,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
             } else {
-                val rows = products.chunked(2)
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    val rows = filteredProducts.chunked(2)
                     items(rows) { row ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             row.forEach { product ->
-                                ProductItem(product, modifier = Modifier.weight(1f))
+                                ProductItem(
+                                    product = product,
+                                    modifier = Modifier.weight(1f),
+                                    onProductClick = { /* Navigate to product detail */ }
+                                )
                             }
-                            if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
+                            if (row.size < 2) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
@@ -237,17 +326,25 @@ fun HomeScreen(navController: NavController) {
 }
 
 @Composable
-fun ProductItem(product: ProductDetailResponse, modifier: Modifier = Modifier) {
+fun ProductItem(
+    product: ProductDetailResponse,
+    modifier: Modifier = Modifier,
+    onProductClick: () -> Unit = {}
+) {
     Card(
         modifier = modifier
-            .height(250.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(6.dp)
+            .height(250.dp)
+            .clickable { onProductClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp)
         ) {
+            // Product Image
             AsyncImage(
                 model = product.imageThumbnail,
                 contentDescription = product.productName,
@@ -255,19 +352,58 @@ fun ProductItem(product: ProductDetailResponse, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .height(150.dp)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF5F5F5))
             )
-            Spacer(modifier = Modifier.height(12.dp))
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Product Name - Made larger, supports multiple lines
             Text(
                 text = product.productName,
-                fontSize = 14.sp,
-                maxLines = 1
-            )
-            Text(
-                text = "${product.price}₫",
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                color = Color.Black,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 18.sp
             )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Price and Cart Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Formatted Price
+                Text(
+                    text = "${formatPrice(product.price)}₫",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Gray
+                )
+
+                // Shopping Cart Button
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(Color.Black, CircleShape)
+                        .clickable {
+                            // Add to cart logic here
+                            Log.d("ProductItem", "Added ${product.productName} to cart")
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Add to Cart",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
         }
     }
 }
