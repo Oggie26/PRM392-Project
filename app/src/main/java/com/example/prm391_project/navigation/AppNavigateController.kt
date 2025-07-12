@@ -40,7 +40,7 @@ sealed class Screen(val route: String) {
         fun createRoute(orderId: Int) = "order_detail_screen/$orderId"
     }
     object ProductDetail : Screen("product_detail/{productId}"){
-        fun createRoute(productId: String) = "order_detail_screen/$productId"
+        fun createRoute(productId: String) = "product_detail/$productId"
     }
 
 }
@@ -130,7 +130,7 @@ fun AppNavController(navController: NavHostController) {
             arguments = listOf(navArgument("productId") { type = NavType.StringType })
         ) { backStackEntry ->
             val productId = backStackEntry.arguments?.getString("productId") ?: ""
-            ProductDetailScreen( navController, productId)
+            ProductDetailScreen(navController, productId)
         }
 
         navigation(

@@ -19,6 +19,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.Alignment
@@ -32,6 +39,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.prm391_project.R
 import com.example.prm391_project.common.CartStateHolder
 import com.example.prm391_project.config.RetrofitClient
 import com.example.prm391_project.response.ProductDetailResponse
@@ -53,6 +65,7 @@ data class ProductDetail(
     val description: String,
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(
     outerNavController: NavController,
@@ -60,7 +73,10 @@ fun ProductDetailScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(true) }
+    var isAddingToCart by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var cartError by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
     var product by remember { mutableStateOf<ProductDetailResponse?>(null) }
     var quantity by remember { mutableStateOf(1) }
     var selectedSize by remember { mutableStateOf("") }
@@ -102,20 +118,20 @@ fun ProductDetailScreen(
     // Logic thêm vào giỏ hàng
     val handleAddToCart: () -> Unit = {
         coroutineScope.launch {
-            isLoading = true
-            error = null
+            isAddingToCart = true
+            cartError = null
 
             val token = tokenManager.getToken()
             if (token.isNullOrEmpty()) {
-                error = "Bạn chưa đăng nhập. Vui lòng đăng nhập để xem giỏ hàng."
-                isLoading = false
+                cartError = "Bạn chưa đăng nhập. Vui lòng đăng nhập để thêm vào giỏ hàng."
+                isAddingToCart = false
                 CartStateHolder.updateCartItemCount(0)
                 return@launch
             }
 
             if (selectedSize.isEmpty()) {
-                error = "Vui lòng chọn kích thước trước."
-                isLoading = false
+                cartError = "Vui lòng chọn kích thước trước khi thêm vào giỏ hàng."
+                isAddingToCart = false
                 return@launch
             }
 
@@ -133,25 +149,29 @@ fun ProductDetailScreen(
                 Log.d("ProductDetailScreen", "Dữ liệu phản hồi API Cart: ${response.data}")
 
                 if (response.code == 200) {
-//                    CartStateHolder.updateCartItemCount(response.data.cartItemCount)
-                    error = null
+                    // Thành công - reset form
+                    cartError = null
+                    successMessage = "Đã thêm sản phẩm vào giỏ hàng thành công!"
                     quantity = 1
                     selectedSize = ""
+                    // Tự động ẩn thông báo sau 3 giây
+                    kotlinx.coroutines.delay(3000)
+                    successMessage = null
                 } else {
-                    error = response.message ?: "Thêm vào giỏ hàng thất bại."
+                    cartError = response.message ?: "Thêm vào giỏ hàng thất bại."
                 }
 
             } catch (e: HttpException) {
-                error = "Lỗi HTTP: ${e.code()} - ${e.message()}"
+                cartError = "Lỗi HTTP: ${e.code()} - ${e.message()}"
                 Log.e("ProductDetailScreen", "Lỗi HTTP: ${e.message()}", e)
             } catch (e: IOException) {
-                error = "Lỗi mạng: Không thể kết nối đến server."
+                cartError = "Lỗi mạng: Không thể kết nối đến server."
                 Log.e("ProductDetailScreen", "Lỗi IO: ${e.message}", e)
             } catch (e: Exception) {
-                error = "Lỗi không xác định: ${e.message}"
+                cartError = "Lỗi không xác định: ${e.message}"
                 Log.e("ProductDetailScreen", "Lỗi tổng quát: ${e.message}", e)
             } finally {
-                isLoading = false
+                isAddingToCart = false
             }
         }
     }
@@ -162,7 +182,16 @@ fun ProductDetailScreen(
 
     if (isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.trackloading))
+            val progress by animateLottieCompositionAsState(
+                composition = composition,
+                iterations = com.airbnb.lottie.compose.LottieConstants.IterateForever
+            )
+            LottieAnimation(
+                composition = composition,
+                progress = { progress },
+                modifier = Modifier.size(200.dp)
+            )
         }
     } else if (error != null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -170,7 +199,8 @@ fun ProductDetailScreen(
                 Text(
                     text = if (error!!.contains("502")) "Máy chủ tạm thời gặp sự cố, vui lòng thử lại sau." else "Lỗi: $error",
                     color = Color.Red,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = { fetchProductDetail() }) {
@@ -181,240 +211,312 @@ fun ProductDetailScreen(
     } else {
         val currentProduct by remember { derivedStateOf { product } }
         if (currentProduct != null) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White)
-                    .padding(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                ) {
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Quay lại",
-                            modifier = Modifier
-                                .clickable { outerNavController.popBackStack() }
-                                .padding(top = 16.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    val images = remember(product) {
-                        listOf(product!!.imageThumbnail) + product!!.images.map { it.image }
-                    }
-                    val pagerState = rememberPagerState(pageCount = { images.size })
-                    Box(
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Chi tiết sản phẩm", fontWeight = FontWeight.Bold) },
+                        navigationIcon = {
+                            IconButton(onClick = { outerNavController.popBackStack() }) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                    )
+                },
+                content = { paddingValues ->
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                            .background(Color(0xFFF5F5F5))
                     ) {
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxSize()
-                        ) { page ->
-                            Image(
-                                painter = rememberAsyncImagePainter(images[page]),
-                                contentDescription = "Ảnh sản phẩm ${page + 1}",
+                        Card(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 0.dp),
+                            shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        ) {
+                            Column(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
-
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(8.dp)
-                        ) {
-                            images.forEachIndexed { index, _ ->
-                                Box(
+                                    .padding(20.dp)
+                            ) {
+                                Column(
                                     modifier = Modifier
-                                        .size(8.dp)
-                                        .background(
-                                            color = Color.Gray.copy(alpha = if (index == pagerState.currentPage) 1f else 0.3f),
-                                            shape = CircleShape
+                                        .weight(1f)
+                                        .fillMaxWidth()
+                                ) {
+                                    val images = remember(product) {
+                                        listOf(product!!.imageThumbnail) + product!!.images.map { it.image }
+                                    }
+                                    val pagerState = rememberPagerState(pageCount = { images.size })
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        HorizontalPager(
+                                            state = pagerState,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) { page ->
+                                            Image(
+                                                painter = rememberAsyncImagePainter(images[page]),
+                                                contentDescription = "Ảnh sản phẩm ${page + 1}",
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .clip(RoundedCornerShape(8.dp)),
+                                                contentScale = ContentScale.Fit
+                                            )
+                                        }
+
+                                        Row(
+                                            horizontalArrangement = Arrangement.Center,
+                                            modifier = Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .padding(8.dp)
+                                        ) {
+                                            images.forEachIndexed { index, _ ->
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(8.dp)
+                                                        .background(
+                                                            color = Color.Gray.copy(alpha = if (index == pagerState.currentPage) 1f else 0.3f),
+                                                            shape = CircleShape
+                                                        )
+                                                        .padding(horizontal = 4.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = product!!.productName,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.weight(1f)
                                         )
-                                        .padding(horizontal = 4.dp)
-                                )
-                            }
-                        }
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                                        Text(
+                                            text = NumberFormat.getCurrencyInstance(Locale("vi", "VN")).format(product!!.price),
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF706B6B)
+                                        )
+                                    }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = product!!.productName,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                                    Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
-                            text = NumberFormat.getCurrencyInstance(Locale("vi", "VN")).format(product!!.price),
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF706B6B)
-                        )
-                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .background(Color(0xFFFFFFFF), RoundedCornerShape(4.dp))
+                                            .border(width = 1.dp, color = Color(0xFF000000), RoundedCornerShape(8.dp))
+                                    ) {
+                                        Text(
+                                            text = product!!.category!!.categoryName,
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF000000),
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier.padding(6.dp)
+                                        )
+                                    }
 
-                    Box(
-                        modifier = Modifier
-                            .background(Color(0xFFFFFFFF), RoundedCornerShape(4.dp))
-                            .border(width = 1.dp, color = Color(0xFF000000), RoundedCornerShape(8.dp))
-                    ) {
-                        Text(
-                            text = product!!.category!!.categoryName,
-                            fontSize = 12.sp,
-                            color = Color(0xFF000000),
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(6.dp)
-                        )
-                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("4.5", fontWeight = FontWeight.Bold)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("(15 Đánh giá)", color = Color.Gray)
+                                    }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107))
-                        Text("4.5", fontWeight = FontWeight.Bold)
-                        Text("(15 Đánh giá)", color = Color.Gray)
-                    }
+                                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Mô tả", fontWeight = FontWeight.SemiBold)
+                                    Text(
+                                        text = product!!.description,
+                                        color = Color.Gray,
+                                        fontSize = 14.sp
+                                    )
 
-                    Text("Mô tả", fontWeight = FontWeight.SemiBold)
-                    Text(
-                        text = product!!.description,
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Loại vải", fontWeight = FontWeight.SemiBold)
+                                    Text(
+                                        text = product!!.fabric!!.fabricName,
+                                        color = Color.Gray,
+                                        fontSize = 14.sp
+                                    )
 
-                    Text("Loại vải", fontWeight = FontWeight.SemiBold)
-                    Text(
-                        text = product!!.fabric!!.fabricName,
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text("Màu", fontWeight = FontWeight.SemiBold)
+                                    Row {
+                                        listOf(Color.White).forEach { color ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(32.dp)
+                                                    .background(color, CircleShape)
+                                                    .border(1.dp, Color.Gray, CircleShape)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                        }
+                                    }
 
-                    Text("Màu", fontWeight = FontWeight.SemiBold)
-                    Row {
-                        listOf(Color.White).forEach { color ->
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .background(color, CircleShape)
-                                    .border(1.dp, Color.Gray, CircleShape)
-                                    .padding(4.dp)
-//                                    .clickable { /* chọn màu */ }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                    }
+                                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text("Kích thước", fontWeight = FontWeight.SemiBold)
+                                    Row {
+                                        product!!.sizes.forEach { size ->
+                                            OutlinedButton(
+                                                onClick = { selectedSize = size.size },
+                                                modifier = Modifier.padding(end = 8.dp),
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.outlinedButtonColors(
+                                                    containerColor = if (selectedSize == size.size) Color(0xFFC4C3C3) else Color.Transparent
+                                                )
+                                            ) {
+                                                Text(size.size)
+                                            }
+                                        }
+                                    }
 
-                    Text("Kích thước", fontWeight = FontWeight.SemiBold)
-                    Row {
-                        product!!.sizes.forEach { size ->
-                            OutlinedButton(
-                                onClick = { selectedSize = size.size },
-                                modifier = Modifier.padding(end = 8.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = if (selectedSize == size.size) Color(0xFFC4C3C3) else Color.Transparent
-                                )
-                            ) {
-                                Text(size.size)
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    // Tăng / giảm số lượng
+                                    Text("Số lượng", fontWeight = FontWeight.SemiBold)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Button(
+                                            onClick = { if (quantity > 1) quantity-- },
+                                            modifier = Modifier.size(36.dp),
+                                            shape = RoundedCornerShape(4.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000000)),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text("-", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        Text(
+                                            text = quantity.toString(),
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier.padding(horizontal = 24.dp)
+                                        )
+
+                                        Button(
+                                            onClick = { quantity++ },
+                                            modifier = Modifier.size(36.dp),
+                                            shape = RoundedCornerShape(4.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF000000)),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+
+                                // Hiển thị thông báo thành công
+                                if (successMessage != null) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp)
+                                            .background(Color(0xFFE8F5E8), RoundedCornerShape(8.dp))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = Color(0xFF4CAF50),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = successMessage!!,
+                                                color = Color(0xFF4CAF50),
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Hiển thị lỗi cart nếu có
+                                if (cartError != null) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp)
+                                            .background(Color(0xFFFFEBEE), RoundedCornerShape(8.dp))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Cancel,
+                                                contentDescription = null,
+                                                tint = Color.Red,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = cartError!!,
+                                                color = Color.Red,
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Nút thêm vào giỏ hàng với loading state
+                                Button(
+                                    onClick = { handleAddToCart() },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF050505)),
+                                    enabled = !isAddingToCart
+                                ) {
+                                    if (isAddingToCart) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                color = Color.White,
+                                                modifier = Modifier.size(20.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Đang thêm...", color = Color.White, fontWeight = FontWeight.Bold)
+                                        }
+                                    } else {
+                                        Text("Thêm vào giỏ hàng", color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
+                                }
                             }
                         }
                     }
                 }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        // Tăng / giảm số lượng
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Button(
-                                onClick = { if (quantity > 1) quantity-- },
-                                modifier = Modifier.size(36.dp),
-                                shape = RoundedCornerShape(4.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(
-                                    0xFF000000
-                                )
-                                ),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("-", fontSize = 30.sp, fontWeight = FontWeight.Bold)
-                            }
-
-                            Text(
-                                text = quantity.toString(),
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(horizontal = 24.dp)
-                            )
-
-                            Button(
-                                onClick = { quantity++ },
-                                modifier = Modifier.size(36.dp),
-                                shape = RoundedCornerShape(4.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(
-                                    0xFF000000
-                                )
-                                ),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("+", fontSize = 30.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-
-
-
-                    }
-                }
-
-                Button(
-                    onClick = { handleAddToCart() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF050505))
-                ) {
-                    Text("Thêm vào giỏ hàng", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            }
+            )
         }
     }
 }
