@@ -254,7 +254,7 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
 //                        horizontalAlignment = Alignment.CenterHorizontally,
 //                        verticalArrangement = Arrangement.Center
 //                    ) {
-//                        MapScreen(navController = bottomNavController)
+                        MapScreen(navController = bottomNavController)
 //                    }
                 }
                 composable("chat") {
