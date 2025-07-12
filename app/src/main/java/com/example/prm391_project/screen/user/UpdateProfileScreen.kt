@@ -276,14 +276,6 @@ fun UpdateProfileScreen(
                             }
 
                             GenderSelection(selectedGender = gender, onGenderSelected = { gender = it })
-                            OutlinedTextField(
-                                value = address,
-                                onValueChange = { address = it },
-                                label = { Text("Địa chỉ") },
-                                leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = "Address") },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            )
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -315,10 +307,7 @@ fun UpdateProfileScreen(
                                     Toast.makeText(context, "Vui lòng chọn ngày sinh.", Toast.LENGTH_SHORT).show()
                                     return@Button
                                 }
-                                if (address.isEmpty()) {
-                                    Toast.makeText(context, "Vui lòng nhập địa chỉ.", Toast.LENGTH_SHORT).show()
-                                    return@Button
-                                }
+                                
                                 if (gender.isEmpty()) {
                                     Toast.makeText(context, "Vui lòng chọn giới tính.", Toast.LENGTH_SHORT).show()
                                     return@Button

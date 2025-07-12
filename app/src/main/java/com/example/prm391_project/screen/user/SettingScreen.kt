@@ -244,7 +244,6 @@ fun SettingsScreen(
                                 InfoRow(label = "Điện thoại", value = userProfileState?.phone ?: "--/--", icon = Icons.Default.Phone)
                                 InfoRow(label = "Ngày sinh", value = userProfileState?.birthday ?: "--/--", icon = Icons.Default.Cake)
                                 InfoRow(label = "Giới tính", value = userProfileState?.gender ?: "--/--", icon = Icons.Default.Face)
-                                InfoRow(label = "Địa chỉ", value = userProfileState?.address ?: "--/--", icon = Icons.Default.LocationOn)
                             }
                         }
                     }
