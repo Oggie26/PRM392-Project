@@ -1,4 +1,3 @@
-// File: com/example/prm391_project/ui/checkout/CheckoutViewModel.kt
 package com.example.prm391_project.ui.checkout
 
 import TokenManager
@@ -34,7 +33,7 @@ class CheckoutViewModel(
                     token = "Bearer $token",
                     cartId = cartId,
                     addressId = addressId,
-                    paymentMethod = paymentMethod  // truyền đúng loại
+                    paymentMethod = paymentMethod
                 )
                 if (resp.code == 200 && resp.data != null) {
                     _uiState.value = UiState.Success(resp.data)

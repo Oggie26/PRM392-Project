@@ -2,6 +2,7 @@
 package com.example.prm391_project.ui.checkout
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,11 +22,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.example.prm391_project.ui.checkout.AddressForm
 
 
 
 /**
- * Dialog thêm địa chỉ mới
+ * Dialog thêm/chỉnh sửa địa chỉ
  */
 @Composable
 fun AddAddressDialog(
@@ -59,16 +61,20 @@ fun AddAddressDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Add New Address", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (initialAddress != null) "Chỉnh sửa địa chỉ" else "Thêm địa chỉ mới",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = "Đóng")
                     }
                 }
                 Spacer(Modifier.height(16.dp))
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text("Tên người nhận") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp)
                 )
@@ -76,7 +82,7 @@ fun AddAddressDialog(
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone Number") },
+                    label = { Text("Số điện thoại") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     shape = RoundedCornerShape(16.dp)
@@ -85,7 +91,7 @@ fun AddAddressDialog(
                 OutlinedTextField(
                     value = street,
                     onValueChange = { street = it },
-                    label = { Text("Street Address") },
+                    label = { Text("Đường") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     minLines = 2
@@ -98,14 +104,14 @@ fun AddAddressDialog(
                     OutlinedTextField(
                         value = district,
                         onValueChange = { district = it },
-                        label = { Text("District") },
+                        label = { Text("Quận/Huyện") },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp)
                     )
                     OutlinedTextField(
                         value = city,
                         onValueChange = { city = it },
-                        label = { Text("City") },
+                        label = { Text("Thành phố") },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp)
                     )
@@ -114,7 +120,7 @@ fun AddAddressDialog(
                 OutlinedTextField(
                     value = ward,
                     onValueChange = { ward = it },
-                    label = { Text("Ward") },
+                    label = { Text("Phường/Xã") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp)
                 )
@@ -122,7 +128,7 @@ fun AddAddressDialog(
                 OutlinedTextField(
                     value = addressLine,
                     onValueChange = { addressLine = it },
-                    label = { Text("Address Line") },
+                    label = { Text("Địa chỉ chi tiết") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp)
                 )
@@ -134,21 +140,21 @@ fun AddAddressDialog(
                         colors = CheckboxDefaults.colors(checkedColor = Color.Black)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Set as default address")
+                    Text("Đặt làm địa chỉ mặc định")
                 }
                 Spacer(Modifier.height(24.dp))
                 Button(
                     onClick = {
                         val newForm = AddressForm(
-                            id          = initialAddress?.id ?: 0,    // ← dùng id gốc nếu có
-                            name        = name,
-                            phone       = phone,
-                            street      = street,
-                            district    = district,
-                            city        = city,
-                            ward        = ward,
+                            id = initialAddress?.id ?: 0,
+                            name = name,
+                            phone = phone,
+                            street = street,
+                            district = district,
+                            city = city,
+                            ward = ward,
                             addressLine = addressLine,
-                            isDefault   = isDefault
+                            isDefault = isDefault
                         )
                         onAddAddress(newForm)
                         onDismiss()
@@ -160,7 +166,7 @@ fun AddAddressDialog(
                         contentColor = Color.White
                     )
                 ) {
-                    Text("Add Address")
+                    Text(if (initialAddress != null) "Cập nhật" else "Thêm địa chỉ")
                 }
             }
         }
@@ -168,7 +174,7 @@ fun AddAddressDialog(
 }
 
 /**
- * Dialog chọn Voucher (hard-code)
+ * Dialog chọn mã giảm giá
  */
 @Composable
 fun VoucherDialog(
@@ -176,10 +182,10 @@ fun VoucherDialog(
     onSelectVoucher: (Voucher) -> Unit
 ) {
     val vouchers = listOf(
-        Voucher("SAVE10","Save 10%",10,"Valid until Dec 31"),
-        Voucher("SAVE15","Save 15%",15,"Valid until Dec 31"),
-        Voucher("SAVE20","Save 20%",20,"Valid until Dec 31"),
-        Voucher("NEWUSER","New User 25% Off",25,"Valid until Dec 31")
+        Voucher("SAVE10", "Giảm 10%", 10, "HSD đến 31/12"),
+        Voucher("SAVE15", "Giảm 15%", 15, "HSD đến 31/12"),
+        Voucher("SAVE20", "Giảm 20%", 20, "HSD đến 31/12"),
+        Voucher("NEWUSER", "Giảm 25% cho khách mới", 25, "HSD đến 31/12")
     )
 
     Dialog(
@@ -199,9 +205,9 @@ fun VoucherDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Select Voucher", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Chọn mã giảm giá", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = "Đóng")
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -215,7 +221,7 @@ fun VoucherDialog(
 }
 
 /**
- * Dialog thanh toán ví điện tử + QRCode
+ * Dialog thanh toán ví điện tử + QR
  */
 @Composable
 fun DigitalWalletDialog(
@@ -226,7 +232,6 @@ fun DigitalWalletDialog(
     var selectedWallet by remember { mutableStateOf("VNPay") }
     var showQR by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -239,34 +244,37 @@ fun DigitalWalletDialog(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Payment", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Thanh toán ví điện tử", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = "Đóng")
                     }
                 }
                 Spacer(Modifier.height(12.dp))
                 if (!showQR) {
-                    Text("Select Wallet", fontSize = 16.sp)
+                    Text("Chọn ví", fontSize = 16.sp)
                     Spacer(Modifier.height(8.dp))
-                    listOf("VNPay","Momo","ZaloPay").forEach { w ->
+                    listOf("VNPay", "Momo", "ZaloPay").forEach { w ->
                         WalletOptionCard(w, selectedWallet == w) { selectedWallet = w }
                         Spacer(Modifier.height(8.dp))
                     }
                     Spacer(Modifier.height(12.dp))
-                    Text("Amount: $$amount", fontWeight = FontWeight.Bold)
+                    Text("Số tiền: ₫${amount}", fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     Button(
                         onClick = { showQR = true },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Generate QR Code")
+                        Text("Tạo mã QR")
                     }
                 } else {
                     QRCodeSection(
@@ -281,7 +289,7 @@ fun DigitalWalletDialog(
 }
 
 /**
- * QRCode + countdown + simulate payment
+ * Phần QRCode + đếm giờ + mô phỏng thanh toán
  */
 @Composable
 fun QRCodeSection(
@@ -306,7 +314,7 @@ fun QRCodeSection(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Scan QR Code to Pay", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text("Quét mã QR để thanh toán", fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
         Box(
             Modifier
@@ -317,7 +325,7 @@ fun QRCodeSection(
             Icon(Icons.Default.QrCode, contentDescription = "QR", modifier = Modifier.size(80.dp))
         }
         Spacer(Modifier.height(12.dp))
-        Text("Time left: ${timeLeft/60}:${(timeLeft%60).toString().padStart(2,'0')}")
+        Text("Thời gian còn lại: ${timeLeft/60}:${(timeLeft%60).toString().padStart(2,'0')}")
         Spacer(Modifier.height(12.dp))
         Button(
             onClick = {
@@ -329,17 +337,17 @@ fun QRCodeSection(
             },
             enabled = !processing,
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Blue, contentColor = Color.White),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
             shape = RoundedCornerShape(16.dp)
         ) {
             if (processing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
-            else Text("Simulate Payment Success")
+            else Text("Xác nhận thanh toán")
         }
     }
 }
 
 /**
- * Dialog đặt hàng thành công
+ * Dialog thành công đặt hàng
  */
 @Composable
 fun OrderSuccessDialog(onDismiss: () -> Unit) {
@@ -358,11 +366,11 @@ fun OrderSuccessDialog(onDismiss: () -> Unit) {
                 Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(Icons.Default.CheckCircle, contentDescription = "Success", tint = Color.Green, modifier = Modifier.size(80.dp))
+                Icon(Icons.Default.CheckCircle, contentDescription = "Thành công", tint = Color.Green, modifier = Modifier.size(80.dp))
                 Spacer(Modifier.height(16.dp))
-                Text("Order Placed Successfully!", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Đặt hàng thành công!", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
-                Text("Thank you for your purchase. Your order will arrive soon.", textAlign = TextAlign.Center)
+                Text("Cảm ơn bạn đã mua hàng. Đơn hàng sẽ sớm được giao.", textAlign = TextAlign.Center)
                 Spacer(Modifier.height(16.dp))
                 Button(
                     onClick = onDismiss,
@@ -370,11 +378,9 @@ fun OrderSuccessDialog(onDismiss: () -> Unit) {
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White)
                 ) {
-                    Text("Back to Shopping")
+                    Text("Quay lại mua sắm")
                 }
             }
         }
     }
 }
-
-

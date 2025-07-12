@@ -10,7 +10,8 @@ data class PaymentResponseDto(
     val paymentStatus: String,
     val address: AddressDto,
     val orderResponseItemList: List<OrderItemDto>,
-    val imageOrderSuccess: String
+    val imageOrderSuccess: String,
+    val redirectUrl: String? = null
 )
 
 data class OrderItemDto(
@@ -22,4 +23,9 @@ data class OrderItemDto(
     val totalPrice: Long,
     val thumbnailProduct: String,
     val size: String
+)
+data class VnpayRedirectDto(
+    val code: Int,
+    val message: String,
+    val redirectUrl: String
 )

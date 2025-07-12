@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.prm391_project.screen.user.CartItem
 
+
+
 @Composable
 fun CheckoutContent(
     cartItems: List<CartItem>,
@@ -56,7 +58,7 @@ fun CheckoutContent(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
-        // --- Header ---
+        // --- Tiêu đề ---
         item {
             Box(
                 Modifier
@@ -78,22 +80,22 @@ fun CheckoutContent(
                             .size(40.dp)
                             .background(Color.White.copy(alpha = 0.2f), CircleShape)
                     ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại", tint = Color.White)
                     }
-                    Text("Checkout", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Thanh toán", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     Box(
                         Modifier
                             .size(40.dp)
                             .background(Color.White.copy(alpha = 0.2f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = Color.White)
+                        Icon(Icons.Default.Person, contentDescription = "Tài khoản", tint = Color.White)
                     }
                 }
             }
         }
 
-        // --- Progress Indicator ---
+        // --- Thanh tiến trình ---
         item {
             Card(
                 Modifier.fillMaxWidth(),
@@ -108,18 +110,16 @@ fun CheckoutContent(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-//                    CheckoutStep(Icons.Default.ShoppingCart, "Cart", isCompleted = true, isActive = false)
-//                    StepConnector(isCompleted = true)
-                    CheckoutStep(Icons.Default.Payment, "Checkout", isCompleted = false, isActive = true)
+                    CheckoutStep(Icons.Default.Payment, "Thanh toán", isCompleted = false, isActive = true)
                     StepConnector(isCompleted = false)
-                    CheckoutStep(Icons.Default.CheckCircle, "Complete", isCompleted = false, isActive = false)
+                    CheckoutStep(Icons.Default.CheckCircle, "Hoàn tất", isCompleted = false, isActive = false)
                 }
             }
         }
 
-        // --- Voucher & Promotion ---
+        // --- Mã giảm giá & Khuyến mãi ---
         item {
-            SectionCard("Voucher & Promotion", Icons.Default.LocalOffer) {
+            SectionCard("Mã giảm giá & Khuyến mãi", Icons.Default.LocalOffer) {
                 if (appliedVoucher != null) {
                     Row(
                         Modifier
@@ -129,12 +129,12 @@ fun CheckoutContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "${appliedVoucher!!.code} — ${appliedVoucher!!.discountPercent}% off",
+                            text = "${appliedVoucher!!.code} — giảm ${appliedVoucher!!.discountPercent}%",
                             fontSize = 16.sp,
                             modifier = Modifier.weight(1f)
                         )
                         TextButton(onClick = { appliedVoucher = null }) {
-                            Text("Remove")
+                            Text("Xóa")
                         }
                     }
                 } else {
@@ -149,7 +149,7 @@ fun CheckoutContent(
                     ) {
                         Icon(Icons.Default.LocalOffer, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Select Voucher", fontSize = 16.sp)
+                        Text("Chọn mã giảm giá", fontSize = 16.sp)
                         Spacer(Modifier.weight(1f))
                         Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
                     }
@@ -157,9 +157,9 @@ fun CheckoutContent(
             }
         }
 
-        // --- Delivery Information + Add/Edit/Delete ---
+        // --- Thông tin giao hàng ---
         item {
-            SectionCard("Delivery Information", Icons.Default.LocationOn) {
+            SectionCard("Thông tin giao hàng", Icons.Default.LocationOn) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     addresses.forEach { addr ->
                         Row(
@@ -172,10 +172,10 @@ fun CheckoutContent(
                                 }
                             }
                             IconButton(onClick = { onEditAddress(addr) }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Edit address")
+                                Icon(Icons.Default.Edit, contentDescription = "Chỉnh sửa địa chỉ")
                             }
                             IconButton(onClick = { onDeleteAddress(addr.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete address")
+                                Icon(Icons.Default.Delete, contentDescription = "Xóa địa chỉ")
                             }
                         }
                     }
@@ -187,27 +187,27 @@ fun CheckoutContent(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Add New Address")
+                        Text("Thêm địa chỉ mới")
                     }
                 }
             }
         }
 
-        // --- Payment Method ---
+        // --- Phương thức thanh toán ---
         item {
-            SectionCard("Payment Method", Icons.Default.CreditCard) {
+            SectionCard("Phương thức thanh toán", Icons.Default.CreditCard) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     listOf(
-                        "Credit Card" to Icons.Default.CreditCard,
-                        "Cash on Delivery" to Icons.Default.LocalShipping,
-                        "Digital Wallet" to Icons.Default.AccountBalanceWallet
+                        "Thẻ tín dụng" to Icons.Default.CreditCard,
+                        "Thanh toán khi nhận hàng" to Icons.Default.LocalShipping,
+                        "Ví điện tử" to Icons.Default.AccountBalanceWallet
                     ).forEach { (method, icon) ->
                         PaymentMethodCard(
                             method = method,
                             subtitle = when (method) {
-                                "Credit Card"     -> "•••• •••• •••• 3218"
-                                "Cash on Delivery"-> "Pay when you receive"
-                                else               -> "VNPAY, Momo, ZaloPay"
+                                "Thẻ tín dụng"              -> "•••• •••• •••• 3218"
+                                "Thanh toán khi nhận hàng" -> "Trả khi nhận hàng"
+                                else                          -> "VNPAY, Momo, ZaloPay"
                             },
                             icon = icon,
                             isSelected = method == selectedPayment,
@@ -218,40 +218,40 @@ fun CheckoutContent(
             }
         }
 
-        // --- Order Summary ---
+        // --- Tóm tắt đơn hàng ---
         item {
-            SectionCard("Order Summary", Icons.Default.Receipt) {
+            SectionCard("Tóm tắt đơn hàng", Icons.Default.Receipt) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     cartItems.forEach { ci ->
                         OrderItem(ci.name, ci.quantity, (ci.price * ci.quantity).toInt())
                     }
                     Divider(color = Color.LightGray, thickness = 1.dp)
-                    SummaryRow("Subtotal", total)
+                    SummaryRow("Tạm tính", total)
                     appliedVoucher?.let {
-                        SummaryRow("Discount", -(total - finalTotal))
+                        SummaryRow("Giảm giá", total - finalTotal)
                     }
-                    SummaryRow("Tax", 0)
+                    SummaryRow("Thuế", 0)
                     Divider(color = Color.LightGray, thickness = 1.dp)
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Total", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("$$finalTotal", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("Tổng cộng", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("₫${finalTotal}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
 
-        // --- Error Message ---
+        // --- Thông báo lỗi ---
         if (error != null) {
             item {
                 Text(error, color = Color.Red, modifier = Modifier.padding(16.dp))
             }
         }
 
-        // --- Place Order Button ---
+        // --- Nút đặt hàng ---
         item {
             Button(
                 onClick = onPlaceOrder,
@@ -266,12 +266,12 @@ fun CheckoutContent(
                 if (isProcessing)
                     CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
                 else
-                    Text("Place Order - $$finalTotal", color = Color.White)
+                    Text("Đặt hàng - ₫${finalTotal}", color = Color.White)
             }
         }
     }
 
-    // --- Voucher Dialog ---
+    // --- Hộp thoại chọn mã giảm giá ---
     if (showVoucherDialog) {
         Dialog(onDismissRequest = { showVoucherDialog = false }) {
             Card(
@@ -286,17 +286,17 @@ fun CheckoutContent(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Select Voucher", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("Chọn mã giảm giá", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                         IconButton(onClick = { showVoucherDialog = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
+                            Icon(Icons.Default.Close, contentDescription = "Đóng")
                         }
                     }
                     Spacer(Modifier.height(12.dp))
                     val vouchers = listOf(
-                        Voucher("SAVE10","Save 10%",10,"Valid until Dec 31"),
-                        Voucher("SAVE15","Save 15%",15,"Valid until Dec 31"),
-                        Voucher("SAVE20","Save 20%",20,"Valid until Dec 31"),
-                        Voucher("NEWUSER","New User 25% Off",25,"Valid until Dec 31")
+                        Voucher("SAVE10","Giảm 10%",10,"HSD đến 31 Dec"),
+                        Voucher("SAVE15","Giảm 15%",15,"HSD đến 31 Dec"),
+                        Voucher("SAVE20","Giảm 20%",20,"HSD đến 31 Dec"),
+                        Voucher("NEWUSER","Giảm 25% cho khách mới",25,"HSD đến 31 Dec")
                     )
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(vouchers) { v ->
@@ -311,5 +311,3 @@ fun CheckoutContent(
         }
     }
 }
-
-
