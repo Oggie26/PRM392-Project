@@ -245,7 +245,7 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
                     HomeScreen(navController = outerNavController)
                 }
                 composable("cart") {
-                    ProductCartScreen(navController = bottomNavController)
+                    ProductCartScreen(navController = outerNavController)
                 }
                 composable("map") {
 //                    Column(
