@@ -34,11 +34,5 @@ interface CartService {
         @Query("size") size: String,
     ): IResponse<CartResult>
 
-    @POST("carts")
-    suspend fun addToCart(
-        @Header("Authorization") token: String,
-        @Query("productId") productId: String,
-        @Query("quantity") quantity: Int,
-        @Query("size") size: String,
-    ): IResponse<CartResult>
+
 }

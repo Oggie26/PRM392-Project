@@ -267,11 +267,8 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
 //                    }
                     ChatScreen(navController = bottomNavController)
                 }
-                composable(".setting") {
+                composable("setting") {
                     SettingsScreen(navController = outerNavController)
-                }
-                composable("checkout") {
-                    CheckoutScreen(navController = bottomNavController)
                 }
 
             }

@@ -398,7 +398,7 @@ fun ProductCartScreen(navController: NavController) {
                         OutlinedButton(
                             onClick = {
                                 syncCartWithServer()
-                                navController.navigate("home")
+                                navController.navigate(Screen.Home.route)
                             },
                             modifier = Modifier
                                 .weight(1f)
@@ -421,7 +421,7 @@ fun ProductCartScreen(navController: NavController) {
                         Button(
                             onClick = {
                                 syncCartWithServer()
-                                navController.navigate("checkout")
+                                navController.navigate(Screen.Checkout.route)
 
                             },
                             modifier = Modifier
