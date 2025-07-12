@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.example.prm391_project.ui.checkout.CheckoutScreen
 
 data class BottomNavItem(
     val route: String,
@@ -245,6 +246,7 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
                 }
                 composable("cart") {
                     ProductCartScreen(navController = bottomNavController)
+
                 }
                 composable("map") {
 //                    Column(
@@ -252,7 +254,7 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
 //                        horizontalAlignment = Alignment.CenterHorizontally,
 //                        verticalArrangement = Arrangement.Center
 //                    ) {
-                        MapScreen(navController = bottomNavController)
+//                        MapScreen(navController = bottomNavController)
 //                    }
                 }
                 composable("chat") {
@@ -264,9 +266,13 @@ fun MainScreenWithBottomNav(outerNavController: NavController) {
                         Text("Chat Screen", style = MaterialTheme.typography.headlineMedium)
                     }
                 }
-                composable("setting") {
+                composable(".setting") {
                     SettingsScreen(navController = outerNavController)
                 }
+                composable("checkout") {
+                    CheckoutScreen(navController = bottomNavController)
+                }
+
             }
         }
     }

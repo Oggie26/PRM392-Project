@@ -6,7 +6,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PATCH
-import retrofit2.http.Query // <-- Import Query
+import retrofit2.http.Query
 
 interface CartService {
     @GET("carts")
@@ -15,14 +15,13 @@ interface CartService {
     @PATCH("carts/update-quantity")
     suspend fun updateQuantity(
         @Header("Authorization") token: String,
-        @Query("productId") productId: String, // <-- Thêm productId
-        @Query("quantity") quantity: Int      // <-- Thêm quantity
+        @Query("productId") productId: String,
+        @Query("quantity") quantity: Int
     ): IResponse<CartResult>
-
 
     @DELETE("carts/remove")
     suspend fun removeItemsFromCart(
         @Header("Authorization") token: String,
-        @Query("productIds") productIds: List<String> // <-- Danh sách productId cần xóa
+        @Query("productIds") productIds: List<String>
     ): IResponse<CartResult>
 }

@@ -413,6 +413,8 @@ fun ProductCartScreen(navController: NavController) {
                         Button(
                             onClick = {
                                 syncCartWithServer()
+                                navController.navigate("checkout")
+
                             },
                             modifier = Modifier
                                 .weight(1f)

@@ -50,6 +50,10 @@ android {
             excludes += "/META-INF/io.netty.versions.properties" // Added to resolve the warning
         }
     }
+    lint {
+        // tắt quy tắc NullSafeMutableLiveData
+        disable += "NullSafeMutableLiveData"
+    }
 }
 
 dependencies {
@@ -72,6 +76,7 @@ dependencies {
     implementation("com.google.maps.android:maps-compose:2.11.4")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation ("androidx.compose.material:material:1.4.3")
 
 //    implementation (libs.androidx.security.crypto.v110alpha06)
     implementation (libs.androidx.security.crypto.ktx.v110alpha06)
