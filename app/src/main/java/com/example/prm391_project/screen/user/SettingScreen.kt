@@ -262,6 +262,16 @@ fun SettingsScreen(
                         onClick = { navController.navigate(Screen.UpdateProfile.route) }
                     )
                 }
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SettingsItem(
+                        icon = Icons.Default.AccessTime,
+                        text = "Lịch sử đặt hàng",
+                        onClick = { navController.navigate(Screen.ListOrder.route) }
+                    )
+                }
 
                 Spacer(modifier = Modifier.weight(1f))
 
