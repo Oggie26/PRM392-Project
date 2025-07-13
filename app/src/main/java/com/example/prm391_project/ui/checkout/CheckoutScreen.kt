@@ -35,7 +35,6 @@ import com.example.prm391_project.api.ApiClient
 import com.example.prm391_project.response.*
 import com.example.prm391_project.screen.user.CartItem
 import com.example.prm391_project.screen.user.toCartItem
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
@@ -109,7 +108,7 @@ fun CheckoutScreen(navController: NavController) {
         }
     }
 
-    // Create order function - Only called after successful payment
+    // Create order function
     fun createOrder() {
         scope.launch {
             isProcessingPayment = true
@@ -130,7 +129,7 @@ fun CheckoutScreen(navController: NavController) {
                     paymentMethod = if (selectedPayment.startsWith("Thanh toán khi nhận hàng")) "COD" else "VNPAY"
                 )
 
-                Log.d("CheckoutScreen", "Create Order Response: code=${resp.code}, message=${resp.message}")
+                Log.d("CheckoutScreen", "API Response: code=${resp.code}, message=${resp.message}")
 
                 if (resp.code == 200) {
                     showSuccessDialog = true
@@ -149,19 +148,43 @@ fun CheckoutScreen(navController: NavController) {
         }
     }
 
-    // Handle payment process
-    fun processPayment() {
+    // Initiate VNPay payment
+    fun initiateVNPayPayment() {
         scope.launch {
-            val method = if (selectedPayment.startsWith("Thanh toán khi nhận hàng")) "COD" else "VNPAY"
+            isProcessingPayment = true
+            errorMsg = null
 
-            if (method == "COD") {
-                // COD: Create order directly
-                createOrder()
-            } else {
-                // VNPAY: Show payment dialog first
-                // In real app, you would get payment URL from your backend
-                paymentUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html" // Dummy URL
-                showPaymentDialog = true
+            val token = tokenMgr.getToken().orEmpty()
+            if (token.isBlank()) {
+                errorMsg = "Token không hợp lệ"
+                isProcessingPayment = false
+                return@launch
+            }
+
+            try {
+                val resp = ApiClient.paymentService.createOrder(
+                    token = "Bearer $token",
+                    cartId = cartId,
+                    addressId = selectedAddress.toLong(),
+                    paymentMethod = "VNPAY"
+                )
+
+                Log.d("CheckoutScreen", "API Response: code=${resp.code}, message=${resp.message}")
+
+                if (resp.code == 200 && !resp.redirectUrl.isNullOrEmpty()) {
+                    paymentUrl = resp.redirectUrl
+                    showPaymentDialog = true
+                } else {
+                    errorMsg = resp.message ?: "Lỗi khởi tạo thanh toán VNPay"
+                }
+            } catch (e: HttpException) {
+                errorMsg = "Lỗi server: ${e.code()}"
+            } catch (e: IOException) {
+                errorMsg = "Không thể kết nối server"
+            } catch (e: Exception) {
+                errorMsg = e.localizedMessage ?: "Lỗi không xác định"
+            } finally {
+                isProcessingPayment = false
             }
         }
     }
@@ -199,7 +222,17 @@ fun CheckoutScreen(navController: NavController) {
                 onSelectPayment = { selectedPayment = it },
                 isProcessing = isProcessingPayment,
                 error = errorMsg,
-                onPlaceOrder = { processPayment() }, // Changed to processPayment
+                onPlaceOrder = {
+                    if (selectedAddress == 0) {
+                        errorMsg = "Vui lòng chọn địa chỉ giao hàng"
+                        return@CheckoutContent
+                    }
+                    if (selectedPayment.startsWith("Thanh toán khi nhận hàng")) {
+                        createOrder()
+                    } else {
+                        initiateVNPayPayment()
+                    }
+                },
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -257,7 +290,7 @@ fun CheckoutScreen(navController: NavController) {
             }
         }
 
-        // Payment Dialog - Only for VNPay
+        // Payment Dialog (Alternative to WebView)
         if (showPaymentDialog && paymentUrl != null) {
             VNPayPaymentDialog(
                 url = paymentUrl!!,
@@ -269,8 +302,7 @@ fun CheckoutScreen(navController: NavController) {
                     showPaymentDialog = false
                     paymentUrl = null
                     if (success) {
-                        // Payment successful, now create the order
-                        createOrder()
+                        createOrder() // Only create order after successful payment
                     } else {
                         errorMsg = "Thanh toán thất bại. Vui lòng thử lại."
                     }
@@ -425,10 +457,8 @@ fun VNPayPaymentDialog(
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                     context.startActivity(intent)
-
-                                    // Simulate payment processing
-                                    // In real app, you would check payment status via API
-                                    simulatePaymentCheck(onPaymentResult)
+                                    // In a real app, payment status should be checked via API
+                                    // For now, we rely on user confirmation
                                 } catch (e: Exception) {
                                     Log.e("VNPayDialog", "Error opening browser: ${e.message}")
                                     onPaymentResult(false)
@@ -453,7 +483,7 @@ fun VNPayPaymentDialog(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Vui lòng hoàn tất thanh toán trong trình duyệt.\nSau khi thanh toán thành công, đơn hàng sẽ được tạo.",
+                        text = "Vui lòng hoàn tất thanh toán trong trình duyệt",
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -485,17 +515,6 @@ fun VNPayPaymentDialog(
             }
         }
     }
-}
-
-// Simulate payment status check (replace with actual API call)
-private fun simulatePaymentCheck(onResult: (Boolean) -> Unit) {
-    // In real implementation, you would:
-    // 1. Poll your backend API to check payment status
-    // 2. Or implement a callback URL handler
-    // 3. Or use push notifications for payment status updates
-
-    // For now, we'll just show the dialog for user to confirm
-    // This is a placeholder implementation
 }
 
 // Extension function to convert AddressForm to AddressDto

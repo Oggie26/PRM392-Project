@@ -34,6 +34,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.RadioButton
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -314,7 +315,7 @@ fun PaymentMethodCard(
                 Text(method, color = if (isSelected) Color.White else Color.Black)
                 Text(subtitle, fontSize = 12.sp, color = if (isSelected) Color.White.copy(0.8f) else Color.Gray)
             }
-            RadioButton(selected = isSelected, onClick = onSelect)
+            RadioButton( selected = isSelected, onClick = onSelect)
         }
     }
 }
