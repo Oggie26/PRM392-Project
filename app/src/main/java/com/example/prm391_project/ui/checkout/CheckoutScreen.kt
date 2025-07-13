@@ -1,18 +1,16 @@
 package com.example.prm391_project.ui.checkout
 
-// Các import giữ nguyên như mã trước đó
 import TokenManager
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Payment
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
@@ -38,6 +35,7 @@ import com.example.prm391_project.api.ApiClient
 import com.example.prm391_project.response.*
 import com.example.prm391_project.screen.user.CartItem
 import com.example.prm391_project.screen.user.toCartItem
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
@@ -57,86 +55,127 @@ fun CheckoutScreen(navController: NavController) {
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var selectedPayment by remember { mutableStateOf("Thanh toán khi nhận hàng") }
-    var showWalletDialog by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var editAddress by remember { mutableStateOf<AddressForm?>(null) }
     var showSuccessDialog by remember { mutableStateOf(false) }
-    var showWebView by remember { mutableStateOf(false) }
-    var webViewUrl by remember { mutableStateOf<String?>(null) }
+    var showPaymentDialog by remember { mutableStateOf(false) }
+    var paymentUrl by remember { mutableStateOf<String?>(null) }
+    var isProcessingPayment by remember { mutableStateOf(false) }
 
-    // Load data
+    // Load data function
     fun loadAll() {
         scope.launch {
-            isLoading = true; errorMsg = null
+            isLoading = true
+            errorMsg = null
             val raw = tokenMgr.getToken().orEmpty()
             if (raw.isBlank()) {
-                errorMsg = "Bạn chưa đăng nhập."; isLoading = false; return@launch
+                errorMsg = "Bạn chưa đăng nhập."
+                isLoading = false
+                return@launch
             }
             val auth = "Bearer $raw"
             try {
-                ApiClient.cartService.getCart(auth).let { resp ->
-                    if (resp.code == 200 && resp.data != null) {
-                        cartId = resp.data.cartId?.toLong() ?: 0L
-                        cartItems = resp.data.items.orEmpty().mapNotNull { (it as CartItemDto).toCartItem() }
-                        total = resp.data.totalPrice?.toInt() ?: 0
-                    } else errorMsg = resp.message
+                // Load cart
+                val cartResponse = ApiClient.cartService.getCart(auth)
+                if (cartResponse.code == 200 && cartResponse.data != null) {
+                    cartId = cartResponse.data.cartId?.toLong() ?: 0L
+                    cartItems = cartResponse.data.items.orEmpty()
+                        .mapNotNull { (it as? CartItemDto)?.toCartItem() }
+                    total = cartResponse.data.totalPrice?.toInt() ?: 0
+                } else {
+                    errorMsg = cartResponse.message
                 }
-                ApiClient.addressService.getAddresses(auth).let { resp ->
-                    if (resp.code == 200 && resp.data != null) {
-                        addresses = resp.data.map(AddressDto::toForm)
-                        resp.data.firstOrNull { it.isDefault == true }?.id?.let { selectedAddress = it }
-                    } else errorMsg = resp.message
+
+                // Load addresses
+                val addressResponse = ApiClient.addressService.getAddresses(auth)
+                if (addressResponse.code == 200 && addressResponse.data != null) {
+                    addresses = addressResponse.data.map(AddressDto::toForm)
+                    addressResponse.data.firstOrNull { it.isDefault == true }?.id?.let {
+                        selectedAddress = it
+                    }
+                } else {
+                    errorMsg = addressResponse.message
                 }
             } catch (e: HttpException) {
-                errorMsg = "Server lỗi: ${e.code()}"
+                errorMsg = "Lỗi server: ${e.code()}"
             } catch (e: IOException) {
                 errorMsg = "Không thể kết nối server."
+            } catch (e: Exception) {
+                errorMsg = "Lỗi không xác định: ${e.message}"
             } finally {
                 isLoading = false
             }
         }
     }
+
+    // Create order function - Only called after successful payment
+    fun createOrder() {
+        scope.launch {
+            isProcessingPayment = true
+            errorMsg = null
+
+            val token = tokenMgr.getToken().orEmpty()
+            if (token.isBlank()) {
+                errorMsg = "Token không hợp lệ"
+                isProcessingPayment = false
+                return@launch
+            }
+
+            try {
+                val resp = ApiClient.paymentService.createOrder(
+                    token = "Bearer $token",
+                    cartId = cartId,
+                    addressId = selectedAddress.toLong(),
+                    paymentMethod = if (selectedPayment.startsWith("Thanh toán khi nhận hàng")) "COD" else "VNPAY"
+                )
+
+                Log.d("CheckoutScreen", "Create Order Response: code=${resp.code}, message=${resp.message}")
+
+                if (resp.code == 200) {
+                    showSuccessDialog = true
+                } else {
+                    errorMsg = resp.message ?: "Lỗi tạo đơn hàng"
+                }
+            } catch (e: HttpException) {
+                errorMsg = "Lỗi server: ${e.code()}"
+            } catch (e: IOException) {
+                errorMsg = "Không thể kết nối server"
+            } catch (e: Exception) {
+                errorMsg = e.localizedMessage ?: "Lỗi không xác định"
+            } finally {
+                isProcessingPayment = false
+            }
+        }
+    }
+
+    // Handle payment process
+    fun processPayment() {
+        scope.launch {
+            val method = if (selectedPayment.startsWith("Thanh toán khi nhận hàng")) "COD" else "VNPAY"
+
+            if (method == "COD") {
+                // COD: Create order directly
+                createOrder()
+            } else {
+                // VNPAY: Show payment dialog first
+                // In real app, you would get payment URL from your backend
+                paymentUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html" // Dummy URL
+                showPaymentDialog = true
+            }
+        }
+    }
+
+    // Load data on first composition
     LaunchedEffect(Unit) { loadAll() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
-            isLoading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    val composition by rememberLottieComposition(
-                        LottieCompositionSpec.RawRes(R.raw.trackloading)
-                    )
-                    val progress by animateLottieCompositionAsState(
-                        composition = composition,
-                        iterations = LottieConstants.IterateForever
-                    )
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { progress },
-                        modifier = Modifier.size(200.dp)
-                    )
-                }
-            }
-            errorMsg != null -> Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = errorMsg!!,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.height(16.dp))
-                Button(
-                    onClick = { loadAll() },
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text("Thử lại")
-                }
-            }
+            isLoading -> LoadingScreen()
+            errorMsg != null -> ErrorScreen(
+                message = errorMsg!!,
+                onRetry = { loadAll() }
+            )
             else -> CheckoutContent(
                 cartItems = cartItems,
                 addresses = addresses,
@@ -147,8 +186,8 @@ fun CheckoutScreen(navController: NavController) {
                 onEditAddress = { editAddress = it; showEditDialog = true },
                 onDeleteAddress = { id ->
                     scope.launch {
-                        val auth = "Bearer ${tokenMgr.getToken().orEmpty()}"
                         try {
+                            val auth = "Bearer ${tokenMgr.getToken().orEmpty()}"
                             ApiClient.addressService.deleteAddress(auth, id)
                             loadAll()
                         } catch (ex: Exception) {
@@ -158,140 +197,57 @@ fun CheckoutScreen(navController: NavController) {
                 },
                 selectedPayment = selectedPayment,
                 onSelectPayment = { selectedPayment = it },
-                isProcessing = isLoading,
+                isProcessing = isProcessingPayment,
                 error = errorMsg,
-                onPlaceOrder = {
-                    scope.launch {
-                        isLoading = true
-                        errorMsg = null
-                        val token = tokenMgr.getToken().orEmpty()
-                        if (token.isBlank()) {
-                            errorMsg = "Token không hợp lệ"
-                            isLoading = false
-                            return@launch
-                        }
-                        val method = if (selectedPayment.startsWith("Thanh toán khi nhận hàng")) "COD" else "VNPAY"
-                        try {
-                            val resp = ApiClient.paymentService.createOrder(
-                                token = "Bearer $token",
-                                cartId = cartId,
-                                addressId = selectedAddress.toLong(),
-                                paymentMethod = method
-                            )
-                            Log.d("CheckoutScreen", "Phản hồi API: code=${resp.code}, message=${resp.message}, redirectUrl=${resp.redirectUrl}")
-                            if (resp.code == 200 && !resp.redirectUrl.isNullOrEmpty()) {
-                                if (method == "VNPAY" && (resp.redirectUrl!!.startsWith("https://sandbox.vnpayment.vn") || resp.redirectUrl!!.startsWith("https://vnpayment.vn"))) {
-                                    Log.d("CheckoutScreen", "Mở WebView với URL: ${resp.redirectUrl}")
-                                    webViewUrl = resp.redirectUrl
-                                    showWebView = true
-                                } else {
-                                    Log.d("CheckoutScreen", "Hiển thị dialog thành công cho COD")
-                                    showSuccessDialog = true
-                                }
-                            } else {
-                                errorMsg = resp.message ?: "Lỗi thanh toán: Không có URL chuyển hướng"
-                                Log.e("CheckoutScreen", "Lỗi thanh toán: $errorMsg")
-                            }
-                        } catch (e: HttpException) {
-                            errorMsg = "Lỗi server: ${e.code()}"
-                            Log.e("CheckoutScreen", "Lỗi HTTP: ${e.message()}")
-                        } catch (e: IOException) {
-                            errorMsg = "Không thể kết nối server"
-                            Log.e("CheckoutScreen", "Lỗi mạng: ${e.message}")
-                        } catch (e: Exception) {
-                            errorMsg = e.localizedMessage ?: "Lỗi không xác định"
-                            Log.e("CheckoutScreen", "Lỗi khác: ${e.message}")
-                        } finally {
-                            isLoading = false
-                        }
-                    }
-                },
+                onPlaceOrder = { processPayment() }, // Changed to processPayment
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        if (showAddDialog) AddAddressDialog(
-            onDismiss = { showAddDialog = false },
-            onAddAddress = { form ->
-                scope.launch {
-                    val auth = "Bearer ${tokenMgr.getToken().orEmpty()}"
-                    try {
-                        ApiClient.addressService.addAddress(auth, form.toDto())
-                        showAddDialog = false; loadAll()
-                    } catch (ex: Exception) {
-                        errorMsg = "Thêm địa chỉ thất bại: ${ex.message}"
-                    }
-                }
-            }
-        )
-
-        if (showEditDialog && editAddress != null) AddAddressDialog(
-            initialAddress = editAddress,
-            onDismiss = { showEditDialog = false; editAddress = null },
-            onAddAddress = { form ->
-                scope.launch {
-                    val auth = "Bearer ${tokenMgr.getToken().orEmpty()}"
-                    try {
-                        ApiClient.addressService.updateAddress(auth, form.id, form.toDto())
-                        showEditDialog = false; editAddress = null; loadAll()
-                    } catch (ex: Exception) {
-                        errorMsg = "Cập nhật địa chỉ thất bại: ${ex.message}"
-                    }
-                }
-            }
-        )
-
-        if (showWalletDialog) DigitalWalletDialog(
-            amount = total,
-            onDismiss = { showWalletDialog = false },
-            onPaymentSuccess = {
-                showWalletDialog = false
-                scope.launch {
-                    isLoading = true
-                    errorMsg = null
-                    val token = tokenMgr.getToken().orEmpty()
-                    if (token.isBlank()) {
-                        errorMsg = "Token không hợp lệ"
-                        isLoading = false
-                        return@launch
-                    }
-                    try {
-                        val resp = ApiClient.paymentService.createOrder(
-                            token = "Bearer $token",
-                            cartId = cartId,
-                            addressId = selectedAddress.toLong(),
-                            paymentMethod = "VNPAY"
-                        )
-                        Log.d("CheckoutScreen", "Phản hồi API: code=${resp.code}, message=${resp.message}, redirectUrl=${resp.redirectUrl}")
-                        if (resp.code == 200 && !resp.redirectUrl.isNullOrEmpty()) {
-                            if (resp.redirectUrl!!.startsWith("https://sandbox.vnpayment.vn") || resp.redirectUrl!!.startsWith("https://vnpayment.vn")) {
-                                Log.d("CheckoutScreen", "Mở WebView với URL: ${resp.redirectUrl}")
-                                webViewUrl = resp.redirectUrl
-                                showWebView = true
-                            } else {
-                                errorMsg = "URL chuyển hướng không hợp lệ: ${resp.redirectUrl}"
-                                Log.e("CheckoutScreen", "URL không hợp lệ: ${resp.redirectUrl}")
-                            }
-                        } else {
-                            errorMsg = resp.message ?: "Lỗi thanh toán: Không có URL chuyển hướng"
-                            Log.e("CheckoutScreen", "Lỗi thanh toán: $errorMsg")
+        // Add Address Dialog
+        if (showAddDialog) {
+            AddAddressDialog(
+                onDismiss = { showAddDialog = false },
+                onAddAddress = { form ->
+                    scope.launch {
+                        try {
+                            val auth = "Bearer ${tokenMgr.getToken().orEmpty()}"
+                            ApiClient.addressService.addAddress(auth, form.toDto())
+                            showAddDialog = false
+                            loadAll()
+                        } catch (ex: Exception) {
+                            errorMsg = "Thêm địa chỉ thất bại: ${ex.message}"
                         }
-                    } catch (e: HttpException) {
-                        errorMsg = "Lỗi server: ${e.code()}"
-                        Log.e("CheckoutScreen", "Lỗi HTTP: ${e.message()}")
-                    } catch (e: IOException) {
-                        errorMsg = "Không thể kết nối server"
-                        Log.e("CheckoutScreen", "Lỗi mạng: ${e.message}")
-                    } catch (e: Exception) {
-                        errorMsg = e.localizedMessage ?: "Lỗi không xác định"
-                        Log.e("CheckoutScreen", "Lỗi khác: ${e.message}")
-                    } finally {
-                        isLoading = false
                     }
                 }
-            }
-        )
+            )
+        }
 
+        // Edit Address Dialog
+        if (showEditDialog && editAddress != null) {
+            AddAddressDialog(
+                initialAddress = editAddress,
+                onDismiss = {
+                    showEditDialog = false
+                    editAddress = null
+                },
+                onAddAddress = { form ->
+                    scope.launch {
+                        try {
+                            val auth = "Bearer ${tokenMgr.getToken().orEmpty()}"
+                            ApiClient.addressService.updateAddress(auth, form.id, form.toDto())
+                            showEditDialog = false
+                            editAddress = null
+                            loadAll()
+                        } catch (ex: Exception) {
+                            errorMsg = "Cập nhật địa chỉ thất bại: ${ex.message}"
+                        }
+                    }
+                }
+            )
+        }
+
+        // Success Dialog
         if (showSuccessDialog) {
             OrderSuccessDialog {
                 showSuccessDialog = false
@@ -301,19 +257,20 @@ fun CheckoutScreen(navController: NavController) {
             }
         }
 
-        if (showWebView && webViewUrl != null) {
-            Log.d("CheckoutScreen", "Hiển thị WebViewDialog với URL: $webViewUrl")
-            WebViewDialog(
-                url = webViewUrl!!,
+        // Payment Dialog - Only for VNPay
+        if (showPaymentDialog && paymentUrl != null) {
+            VNPayPaymentDialog(
+                url = paymentUrl!!,
                 onDismiss = {
-                    showWebView = false
-                    webViewUrl = null
+                    showPaymentDialog = false
+                    paymentUrl = null
                 },
                 onPaymentResult = { success ->
-                    showWebView = false
-                    webViewUrl = null
+                    showPaymentDialog = false
+                    paymentUrl = null
                     if (success) {
-                        showSuccessDialog = true
+                        // Payment successful, now create the order
+                        createOrder()
                     } else {
                         errorMsg = "Thanh toán thất bại. Vui lòng thử lại."
                     }
@@ -323,130 +280,206 @@ fun CheckoutScreen(navController: NavController) {
     }
 }
 
-// WebViewDialog và AddressForm.toDto giữ nguyên như mã trước đó
 @Composable
-fun WebViewDialog(
+fun LoadingScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val composition by rememberLottieComposition(
+                LottieCompositionSpec.RawRes(R.raw.trackloading)
+            )
+            val progress by animateLottieCompositionAsState(
+                composition = composition,
+                iterations = LottieConstants.IterateForever
+            )
+            LottieAnimation(
+                composition = composition,
+                progress = { progress },
+                modifier = Modifier.size(200.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Đang tải...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun ErrorScreen(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Error,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(64.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyLarge
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = onRetry,
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text("Thử lại")
+        }
+    }
+}
+
+@Composable
+fun VNPayPaymentDialog(
     url: String,
     onDismiss: () -> Unit,
     onPaymentResult: (Boolean) -> Unit
 ) {
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    var isProcessing by remember { mutableStateOf(false) }
+    var showInstructions by remember { mutableStateOf(true) }
 
     Dialog(
-        onDismissRequest = { if (!isLoading) onDismiss() },
-        properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)
+        onDismissRequest = { if (!isProcessing) onDismiss() },
+        properties = DialogProperties(dismissOnClickOutside = false)
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.9f)
                 .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            shape = RoundedCornerShape(16.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Thanh toán VNPay", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    IconButton(onClick = { if (!isLoading) onDismiss() }) {
+                    Text(
+                        text = "Thanh toán VNPay",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = { if (!isProcessing) onDismiss() }) {
                         Icon(Icons.Default.Close, contentDescription = "Đóng")
                     }
                 }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-                    AndroidView(
-                        modifier = Modifier.fillMaxSize(),
-                        factory = { context ->
-                            WebView(context).apply {
-                                settings.javaScriptEnabled = true
-                                settings.domStorageEnabled = true
-                                settings.loadWithOverviewMode = true
-                                settings.useWideViewPort = true
-                                settings.javaScriptCanOpenWindowsAutomatically = true
-                                settings.setSupportMultipleWindows(true)
-                                webViewClient = object : WebViewClient() {
-                                    override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-                                        isLoading = true
-                                        error = null
-                                        Log.d("WebViewDialog", "Bắt đầu tải: $url")
-                                    }
 
-                                    override fun onPageFinished(view: WebView?, url: String?) {
-                                        isLoading = false
-                                        Log.d("WebViewDialog", "Hoàn tất tải: $url")
-                                    }
+                Spacer(modifier = Modifier.height(16.dp))
 
-                                    override fun onReceivedError(
-                                        view: WebView?,
-                                        request: WebResourceRequest?,
-                                        error: WebResourceError?
-                                    ) {
-                                        isLoading = false
-                                    }
-                                    override fun shouldOverrideUrlLoading(
-                                        view: WebView?,
-                                        url: String
-                                    ): Boolean {
-                                        if (url.contains("vnp_TransactionStatus")) {
-                                            val uri = Uri.parse(url)
-                                            val transactionStatus = uri.getQueryParameter("vnp_TransactionStatus")
-                                            Log.d("WebViewDialog", "Trạng thái giao dịch: $transactionStatus")
-                                            when (transactionStatus) {
-                                                "00" -> onPaymentResult(true)
-                                                else -> onPaymentResult(false)
-                                            }
-                                            return true
-                                        }
-                                        if (url.startsWith("vnpay://")) {
-                                            try {
-                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                                context.startActivity(intent)
-                                                return true
-                                            } catch (e: Exception) {
-                                                error = "Không thể mở ứng dụng VNPay: ${e.message}"
-                                                Log.e("WebViewDialog", "Lỗi deep link: ${e.message}")
-                                            }
-                                        }
-                                        return false
-                                    }
-                                }
-                                if (url.startsWith("https://sandbox.vnpayment.vn") || url.startsWith("https://vnpayment.vn")) {
-                                    loadUrl(url)
-                                } else {
-                                    error = "URL không hợp lệ: $url"
-                                    isLoading = false
-                                    Log.e("WebViewDialog", "URL không hợp lệ: $url")
-                                }
-                            }
-                        }
+                Icon(
+                    imageVector = Icons.Default.Payment,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(80.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (showInstructions) {
+                    Text(
+                        text = "Bạn sẽ được chuyển đến trang thanh toán VNPay",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center),
-                            color = Color.Black
-                        )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Hủy")
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Button(
+                            onClick = {
+                                isProcessing = true
+                                showInstructions = false
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+
+                                    // Simulate payment processing
+                                    // In real app, you would check payment status via API
+                                    simulatePaymentCheck(onPaymentResult)
+                                } catch (e: Exception) {
+                                    Log.e("VNPayDialog", "Error opening browser: ${e.message}")
+                                    onPaymentResult(false)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Thanh toán")
+                        }
                     }
-                    if (error != null) {
-                        Text(
-                            text = error!!,
-                            color = Color.Red,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .padding(16.dp),
-                            textAlign = TextAlign.Center
-                        )
+                } else {
+                    Text(
+                        text = "Đang xử lý thanh toán...",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    CircularProgressIndicator()
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Vui lòng hoàn tất thanh toán trong trình duyệt.\nSau khi thanh toán thành công, đơn hàng sẽ được tạo.",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        OutlinedButton(
+                            onClick = { onPaymentResult(false) },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Hủy")
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Button(
+                            onClick = { onPaymentResult(true) },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Hoàn tất")
+                        }
                     }
                 }
             }
@@ -454,6 +487,18 @@ fun WebViewDialog(
     }
 }
 
+// Simulate payment status check (replace with actual API call)
+private fun simulatePaymentCheck(onResult: (Boolean) -> Unit) {
+    // In real implementation, you would:
+    // 1. Poll your backend API to check payment status
+    // 2. Or implement a callback URL handler
+    // 3. Or use push notifications for payment status updates
+
+    // For now, we'll just show the dialog for user to confirm
+    // This is a placeholder implementation
+}
+
+// Extension function to convert AddressForm to AddressDto
 private fun AddressForm.toDto() = AddressDto(
     id = if (id == 0) null else id,
     name = name,
@@ -465,3 +510,20 @@ private fun AddressForm.toDto() = AddressDto(
     addressLine = addressLine,
     isDefault = isDefault
 )
+
+// Additional utility functions for better error handling
+private fun handleApiError(error: Throwable): String {
+    return when (error) {
+        is HttpException -> {
+            when (error.code()) {
+                401 -> "Phiên đăng nhập đã hết hạn"
+                403 -> "Không có quyền truy cập"
+                404 -> "Không tìm thấy dữ liệu"
+                500 -> "Lỗi server nội bộ"
+                else -> "Lỗi server: ${error.code()}"
+            }
+        }
+        is IOException -> "Không thể kết nối server. Vui lòng kiểm tra kết nối mạng."
+        else -> error.localizedMessage ?: "Lỗi không xác định"
+    }
+}
