@@ -3,11 +3,12 @@ package com.example.prm391_project.config
 import com.example.prm391_project.api.AuthService
 import com.example.prm391_project.api.CartService
 import com.example.prm391_project.api.ProductService
-import com.example.prm391_project.api.OrderService // Thêm import
+import com.example.prm391_project.api.OrderService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
     private const val BASE_API_URL = "https://icot.onrender.com/api/"
@@ -17,8 +18,13 @@ object RetrofitClient {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
+    // ✅ Updated OkHttpClient with increased timeout values
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
+        .connectTimeout(30, TimeUnit.SECONDS)    // Connection timeout
+        .readTimeout(60, TimeUnit.SECONDS)       // Read timeout
+        .writeTimeout(60, TimeUnit.SECONDS)      // Write timeout
+        .callTimeout(90, TimeUnit.SECONDS)       // Overall call timeout
         .build()
 
     private val apiRetrofitBuilder: Retrofit.Builder = Retrofit.Builder()
@@ -50,7 +56,6 @@ object RetrofitClient {
             .create(ProductService::class.java)
     }
 
-    // ✅ Thêm instance cho OrderService
     val orderService: OrderService by lazy {
         Retrofit.Builder()
             .baseUrl("https://icot.onrender.com/")
