@@ -3,15 +3,24 @@ package com.example.prm391_project.ui.checkout
 import TokenManager
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.prm391_project.R
+import com.example.prm391_project.Screen
 import com.example.prm391_project.api.ApiClient
 import com.example.prm391_project.response.*
 import com.example.prm391_project.screen.user.CartItem
@@ -92,6 +101,7 @@ fun CheckoutScreen(navController: NavController) {
                 val data = (paymentState as CheckoutViewModel.UiState.Success).data
                 if (selectedPayment == "Ví điện tử" && !data.redirectUrl.isNullOrEmpty()) {
                     // Mở trình duyệt tới URL VNPAY
+                    Log.d("URL",data.redirectUrl)
                     uriHandler.openUri(data.redirectUrl)
                 } else {
                     // Modal thành công cho COD hoặc trường hợp ví không có URL
@@ -107,7 +117,22 @@ fun CheckoutScreen(navController: NavController) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
-            isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+            isLoading ->  Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val composition by rememberLottieComposition(
+                        LottieCompositionSpec.RawRes(R.raw.trackloading)
+                    )
+                    val progress by animateLottieCompositionAsState(
+                        composition = composition,
+                        iterations = LottieConstants.IterateForever
+                    )
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier.size(200.dp)
+                    )
+                }
+            }
             errorMsg != null -> Text(
                 text = errorMsg!!,
                 modifier = Modifier.align(Alignment.Center),
@@ -190,7 +215,7 @@ fun CheckoutScreen(navController: NavController) {
         if (showSuccessDialog) {
             OrderSuccessDialog {
                 showSuccessDialog = false
-                navController.navigate("home") { popUpTo("checkout") { inclusive = true } }
+                navController.navigate(Screen.Home.route) { popUpTo("checkout") { inclusive = true } }
             }
         }
     }
