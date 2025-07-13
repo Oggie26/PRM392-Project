@@ -9,6 +9,6 @@ interface PaymentService {
         @Header("Authorization") token: String,
         @Query("cartId") cartId: Long,
         @Query("addressId") addressId: Long,
-        @Query("paymentMethod") paymentMethod: String = "COD"
+        @Query("paymentMethod") paymentMethod: String
     ): IResponse<PaymentResponseDto>
 }

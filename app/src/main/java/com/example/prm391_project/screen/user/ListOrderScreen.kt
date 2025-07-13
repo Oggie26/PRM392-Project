@@ -13,14 +13,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +34,8 @@ import com.example.prm391_project.Screen
 import com.example.prm391_project.common.getStatusColorAndIcon
 import com.example.prm391_project.config.RetrofitClient
 import com.example.prm391_project.response.OrderResult
+import kotlinx.coroutines.delay
+import java.net.SocketTimeoutException
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -50,32 +48,71 @@ fun ListOrderScreen(navController: NavHostController) {
     var orders by remember { mutableStateOf<List<OrderResult>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var retryCount by remember { mutableStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    // Function to fetch orders with retry logic
+    suspend fun fetchOrders() {
         try {
             val token = tokenManager.getToken()
             if (token.isNullOrEmpty()) {
                 errorMessage = "Vui lòng đăng nhập để xem lịch sử đơn hàng"
                 isLoading = false
-                return@LaunchedEffect
+                return
             }
 
-            val response = RetrofitClient.orderService.getOrderHistory("Bearer $token")
+            Log.d("ListOrderScreen", "Fetching orders with token: $token")
+
+            val response = RetrofitClient.orderService.getOrderHistory(
+                token = "Bearer $token",
+                page = 1,
+                limit = 50
+            )
+
+            Log.d("ListOrderScreen", "Response code: ${response.code()}")
+
             if (response.isSuccessful) {
-                orders = response.body()?.result ?: emptyList()
-                if (orders.isEmpty()) {
-                    errorMessage = "Bạn chưa có đơn hàng nào"
+                val orderHistory = response.body()
+                orders = orderHistory?.result ?: emptyList()
+                errorMessage = if (orders.isEmpty()) {
+                    "Bạn chưa có đơn hàng nào"
+                } else {
+                    null
                 }
+                Log.d("ListOrderScreen", "Successfully loaded ${orders.size} orders")
             } else {
-                errorMessage = "Không thể tải danh sách đơn hàng"
-                Log.e("Order", "Failed to fetch: ${response.code()}")
+                errorMessage = when (response.code()) {
+                    401 -> "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại"
+                    403 -> "Không có quyền truy cập"
+                    404 -> "Không tìm thấy dữ liệu"
+                    500 -> "Lỗi máy chủ. Vui lòng thử lại sau"
+                    else -> "Không thể tải danh sách đơn hàng (${response.code()})"
+                }
+                Log.e("ListOrderScreen", "API Error: ${response.code()} - ${response.message()}")
             }
+        } catch (e: SocketTimeoutException) {
+            errorMessage = "Kết nối quá chậm. Vui lòng kiểm tra mạng và thử lại"
+            Log.e("ListOrderScreen", "Timeout Exception: ${e.message}")
         } catch (e: Exception) {
             errorMessage = "Lỗi kết nối: ${e.message}"
-            Log.e("Order", "Exception: ${e.message}")
+            Log.e("ListOrderScreen", "Exception: ${e.message}")
         } finally {
             isLoading = false
         }
+    }
+
+    // Retry function
+    fun retryFetch() {
+        retryCount++
+        isLoading = true
+        errorMessage = null
+    }
+
+    // Launch effect with retry logic
+    LaunchedEffect(retryCount) {
+        if (retryCount > 0) {
+            delay(1000) // Wait 1 second before retry
+        }
+        fetchOrders()
     }
 
     Scaffold(
@@ -85,6 +122,19 @@ fun ListOrderScreen(navController: NavHostController) {
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                    }
+                },
+                actions = {
+                    // Add refresh button
+                    IconButton(
+                        onClick = { retryFetch() },
+                        enabled = !isLoading
+                    ) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Làm mới",
+                            tint = if (isLoading) Color.Gray else Color.Black
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -112,53 +162,15 @@ fun ListOrderScreen(navController: NavHostController) {
                     ) {
                         when {
                             isLoading -> {
-                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                    val composition by rememberLottieComposition(
-                                        LottieCompositionSpec.RawRes(R.raw.trackloading))
-                                    val progress by animateLottieCompositionAsState(
-                                        composition = composition,
-                                        iterations = com.airbnb.lottie.compose.LottieConstants.IterateForever
-                                    )
-                                    LottieAnimation(
-                                        composition = composition,
-                                        progress = { progress },
-                                        modifier = Modifier.size(200.dp)
-                                    )
-                                }
+                                LoadingContent()
                             }
 
                             errorMessage != null -> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(80.dp)
-                                                .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                Icons.Default.ShoppingBag,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(40.dp),
-                                                tint = Color.Black.copy(alpha = 0.4f)
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(24.dp))
-                                        Text(
-                                            errorMessage!!,
-                                            textAlign = TextAlign.Center,
-                                            color = Color.Black.copy(alpha = 0.7f),
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
-                                }
+                                ErrorContent(
+                                    errorMessage = errorMessage!!,
+                                    onRetry = { retryFetch() },
+                                    showRetryButton = true
+                                )
                             }
 
                             else -> {
@@ -183,6 +195,83 @@ fun ListOrderScreen(navController: NavHostController) {
         }
     )
 }
+
+@Composable
+fun LoadingContent() {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        val composition by rememberLottieComposition(
+            LottieCompositionSpec.RawRes(R.raw.trackloading)
+        )
+        val progress by animateLottieCompositionAsState(
+            composition = composition,
+            iterations = com.airbnb.lottie.compose.LottieConstants.IterateForever
+        )
+        LottieAnimation(
+            composition = composition,
+            progress = { progress },
+            modifier = Modifier.size(200.dp)
+        )
+    }
+}
+
+@Composable
+fun ErrorContent(
+    errorMessage: String,
+    onRetry: () -> Unit,
+    showRetryButton: Boolean = false
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.ShoppingBag,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = Color.Black.copy(alpha = 0.4f)
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                errorMessage,
+                textAlign = TextAlign.Center,
+                color = Color.Black.copy(alpha = 0.7f),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+
+            if (showRetryButton) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = onRetry,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Thử lại")
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun ModernOrderCard(order: OrderResult, onClick: () -> Unit) {
     val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
@@ -194,7 +283,7 @@ fun ModernOrderCard(order: OrderResult, onClick: () -> Unit) {
             date?.let { outputDateFormatter.format(it) } ?: "Không xác định"
         } ?: "Không xác định"
     } catch (e: Exception) {
-        "Không xác định" // Fallback if parsing fails
+        "Không xác định"
     }
     val (statusColor, statusIcon) = getStatusColorAndIcon(order.status)
 

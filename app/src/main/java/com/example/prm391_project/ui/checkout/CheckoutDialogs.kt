@@ -23,7 +23,7 @@ import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.example.prm391_project.ui.checkout.AddressForm
-
+import com.google.android.gms.common.util.CollectionUtils.listOf
 
 
 /**
@@ -230,7 +230,7 @@ fun DigitalWalletDialog(
     onPaymentSuccess: () -> Unit
 ) {
     var selectedWallet by remember { mutableStateOf("VNPay") }
-    var showQR by remember { mutableStateOf(false) }
+    var processing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Dialog(
@@ -259,29 +259,30 @@ fun DigitalWalletDialog(
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                if (!showQR) {
-                    Text("Chọn ví", fontSize = 16.sp)
+                Text("Chọn ví", fontSize = 16.sp)
+                Spacer(Modifier.height(8.dp))
+                listOf("VNPay", "Momo", "ZaloPay").forEach { w ->
+                    WalletOptionCard(w, selectedWallet == w) { selectedWallet = w }
                     Spacer(Modifier.height(8.dp))
-                    listOf("VNPay", "Momo", "ZaloPay").forEach { w ->
-                        WalletOptionCard(w, selectedWallet == w) { selectedWallet = w }
-                        Spacer(Modifier.height(8.dp))
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Text("Số tiền: ₫${amount}", fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = { showQR = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text("Tạo mã QR")
-                    }
-                } else {
-                    QRCodeSection(
-                        wallet = selectedWallet,
-                        amount = amount,
-                        onPaymentSuccess = onPaymentSuccess
-                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Text("Số tiền: ₫${amount}", fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        processing = true
+                        scope.launch {
+                            delay(2000) // Simulate payment processing
+                            onPaymentSuccess()
+                        }
+                    },
+                    enabled = !processing,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    if (processing) CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
+                    else Text("Thanh toán")
                 }
             }
         }

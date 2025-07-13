@@ -29,3 +29,9 @@ data class VnpayRedirectDto(
     val message: String,
     val redirectUrl: String
 )
+
+data class PaymentResponse(
+    val code: Int,
+    val message: String?,
+    val redirectUrl: String?
+)
