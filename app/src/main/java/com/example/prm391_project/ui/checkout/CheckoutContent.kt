@@ -172,14 +172,21 @@ fun CheckoutContent(
                                     onSelectAddress(addr.id)
                                 }
                             }
+
+                            // Nút sửa luôn hiển thị
                             IconButton(onClick = { onEditAddress(addr) }) {
                                 Icon(Icons.Default.Edit, contentDescription = "Chỉnh sửa địa chỉ")
                             }
-                            IconButton(onClick = { onDeleteAddress(addr.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Xóa địa chỉ")
+
+                            // Chỉ hiển thị nút xóa khi không phải default
+                            if (!addr.isDefault) {
+                                IconButton(onClick = { onDeleteAddress(addr.id) }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Xóa địa chỉ")
+                                }
                             }
                         }
                     }
+
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(
                         onClick = onAddAddress,
@@ -199,14 +206,14 @@ fun CheckoutContent(
             SectionCard("Phương thức thanh toán", Icons.Default.CreditCard) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     listOf(
-                        "Thẻ tín dụng" to Icons.Default.CreditCard,
+//                        "Thẻ tín dụng" to Icons.Default.CreditCard,
                         "Thanh toán khi nhận hàng" to Icons.Default.LocalShipping,
                         "Ví điện tử" to Icons.Default.AccountBalanceWallet
                     ).forEach { (method, icon) ->
                         PaymentMethodCard(
                             method = method,
                             subtitle = when (method) {
-                                "Thẻ tín dụng"              -> "•••• •••• •••• 3218"
+//                                "Thẻ tín dụng"              -> "•••• •••• •••• 3218"
                                 "Thanh toán khi nhận hàng" -> "Trả khi nhận hàng"
                                 else                          -> "VNPAY, Momo, ZaloPay"
                             },

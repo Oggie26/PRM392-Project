@@ -3,6 +3,7 @@ package com.example.prm391_project.ui.checkout
 import TokenManager
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -100,6 +101,7 @@ fun CheckoutScreen(navController: NavController) {
                 val data = (paymentState as CheckoutViewModel.UiState.Success).data
                 if (selectedPayment == "Ví điện tử" && !data.redirectUrl.isNullOrEmpty()) {
                     // Mở trình duyệt tới URL VNPAY
+                    Log.d("URL",data.redirectUrl)
                     uriHandler.openUri(data.redirectUrl)
                 } else {
                     // Modal thành công cho COD hoặc trường hợp ví không có URL
@@ -115,7 +117,7 @@ fun CheckoutScreen(navController: NavController) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         when {
-            isLoading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            isLoading ->  Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     val composition by rememberLottieComposition(
                         LottieCompositionSpec.RawRes(R.raw.trackloading)
