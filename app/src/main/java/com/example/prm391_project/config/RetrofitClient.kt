@@ -18,13 +18,13 @@ object RetrofitClient {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    // ✅ Updated OkHttpClient with increased timeout values
+ 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
-        .connectTimeout(30, TimeUnit.SECONDS)    // Connection timeout
-        .readTimeout(60, TimeUnit.SECONDS)       // Read timeout
-        .writeTimeout(60, TimeUnit.SECONDS)      // Write timeout
-        .callTimeout(90, TimeUnit.SECONDS)       // Overall call timeout
+        .connectTimeout(30, TimeUnit.SECONDS)    
+        .readTimeout(60, TimeUnit.SECONDS)       
+        .writeTimeout(60, TimeUnit.SECONDS)      
+        .callTimeout(90, TimeUnit.SECONDS)     
         .build()
 
     private val apiRetrofitBuilder: Retrofit.Builder = Retrofit.Builder()
