@@ -82,7 +82,7 @@ fun LoginScreen(navController: NavController) {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Logo placeholder
+
                 Box(
                     modifier = Modifier
                         .size(100.dp)
@@ -198,9 +198,8 @@ fun LoginScreen(navController: NavController) {
                                             val savedToken = tokenManager.getToken()
                                             Log.d("TokenDebug", "Saved and retrieved token: $savedToken")
 
-                                            // Chỉnh sửa navigation để phù hợp với navigation mới
+
                                             navController.navigate(Screen.MainAppGraph.route) {
-                                                // Clear toàn bộ back stack để không quay lại login
                                                 popUpTo(0) { inclusive = true }
                                                 launchSingleTop = true
                                             }
